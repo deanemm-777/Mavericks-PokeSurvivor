@@ -16,11 +16,14 @@
  * Tapping the screen directly still works everywhere.
  *
  * Layout numbers come from the skin's info.json (assets/skin/waveblue-info.json),
- * in its 414-wide mapping space. CROP is where the image is cut: everything above
- * it is the game screen.
+ * in its 414-wide mapping space. The whole skin is drawn (assets/skin/device.png,
+ * the original art with its screen window enlarged to SCREEN), anchored to the
+ * bottom of the phone, and the game sits exactly in that window. CROP is where
+ * the controls start.
  */
 G.PadSkin = (() => {
   const MAP_W = 414, MAP_H = 898, CROP = 492;
+  const SCREEN = [14, 54, 386, 414];   // the window punched in the bezel: x, y, w, h (keep in sync with device.png)
   // frame = [x, y, w, h], ext = extra touch margin [top, right, bottom, left]
   const ITEMS = [
     { id: 'dpad',   f: [35, 612, 142, 142], e: [12, 12, 12, 12] },
@@ -34,31 +37,35 @@ G.PadSkin = (() => {
   ];
   const state = { up: false, down: false, left: false, right: false, a: false, b: false, l: false, r: false, start: false, select: false, menu: false };
   const pointers = new Map();        // pointerId -> control id (or 'dpad')
-  let root = null, glows = {}, k = 1, active = false;
+  let root = null, img = null, pad = null, glows = {}, k = 1, active = false;
 
   function build() {
+    // root: the whole skin over the page (lets touches through); pad: the controls, which take them.
     root = document.createElement('div');
     root.id = 'pad-skin';
     root.setAttribute('aria-label', 'Controller');
-    const img = document.createElement('img');
-    img.src = 'assets/skin/controller.png';
+    img = document.createElement('img');
+    img.src = 'assets/skin/device.png';
     img.alt = '';
     img.draggable = false;
     root.appendChild(img);
+    pad = document.createElement('div');
+    pad.className = 'pad-hit';
+    root.appendChild(pad);
     for (const it of ITEMS) {
       const g = document.createElement('div');
       g.className = 'pad-glow pad-' + it.id;
-      root.appendChild(g);
+      pad.appendChild(g);
       glows[it.id] = g;
     }
     document.body.appendChild(root);
-    for (const ev of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'lostpointercapture']) root.addEventListener(ev, onPointer);
+    for (const ev of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'lostpointercapture']) pad.addEventListener(ev, onPointer);
     // No long-press menus, zoom or text selection on the controller.
-    root.addEventListener('contextmenu', e => e.preventDefault());
-    root.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+    pad.addEventListener('contextmenu', e => e.preventDefault());
+    pad.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
   }
 
-  /** Where a control sits in CSS pixels inside #pad-skin. */
+  /** Where a control sits in CSS pixels inside the controls layer. */
   function rect(it, withExt) {
     const [x, y, w, h] = it.f, [t, r, b, l] = withExt ? it.e : [0, 0, 0, 0];
     return { x: (x - l) * k, y: (y - CROP - t) * k, w: (w + l + r) * k, h: (h + t + b) * k };
@@ -74,9 +81,25 @@ G.PadSkin = (() => {
     }
     if (!root) return;
     k = innerWidth / MAP_W;
-    const h = Math.round((MAP_H - CROP) * k);
-    document.documentElement.style.setProperty('--ctrl-h', h + 'px');
-    root.style.height = h + 'px';
+    const H = innerHeight, top = H - MAP_H * k;                 // skin anchored to the bottom edge
+    img.style.top = top + 'px';
+    img.style.height = MAP_H * k + 'px';
+    root.style.setProperty('--fill', Math.max(0, Math.ceil(top)) + 'px');   // taller phones: plain bezel above
+    pad.style.top = top + CROP * k + 'px';
+    pad.style.height = (MAP_H - CROP) * k + 'px';
+    // The game window, in page pixels. On short phones the top of the skin is cut
+    // off, so the window starts just below the status bar instead.
+    const safeTop = G.Touch.safeArea().top;
+    let sy = top + SCREEN[1] * k;
+    const sb = top + (SCREEN[1] + SCREEN[3]) * k;
+    sy = Math.max(sy, safeTop + 4, 0);
+    const css = document.documentElement.style;
+    css.setProperty('--sx', SCREEN[0] * k + 'px');
+    css.setProperty('--sy', sy + 'px');
+    css.setProperty('--sw', SCREEN[2] * k + 'px');
+    css.setProperty('--sh', Math.max(120, sb - sy) + 'px');
+    css.setProperty('--sr', 12 * k + 'px');
+    css.setProperty('--ctrl-h', (MAP_H - CROP) * k + 'px');
     for (const it of ITEMS) {
       const r = rect(it, false), g = glows[it.id];
       g.style.left = r.x + 'px'; g.style.top = r.y + 'px';
@@ -126,10 +149,10 @@ G.PadSkin = (() => {
 
   function onPointer(e) {
     e.preventDefault();
-    const box = root.getBoundingClientRect();
+    const box = pad.getBoundingClientRect();
     const px = e.clientX - box.left, py = e.clientY - box.top;
     if (e.type === 'pointerdown') {
-      try { root.setPointerCapture(e.pointerId); } catch (err) { /* nada */ }
+      try { pad.setPointerCapture(e.pointerId); } catch (err) { /* nada */ }
       G.Audio && G.Audio.unlock && G.Audio.unlock();
       const it = hit(px, py);
       pointers.set(e.pointerId, it ? { id: it.id, dirs: it.id === 'dpad' ? dpadDirs(px, py) : null } : null);

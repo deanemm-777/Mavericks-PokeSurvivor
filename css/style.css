@@ -1127,36 +1127,51 @@ html:lang(zh) .btn, html:lang(zh) .chip { letter-spacing: 0; }
 }
 #offline-pill.done { border-color: #5fe08a; color: #d8ffe4; }
 
-/* ================= On-screen controller (js/ui/pad-skin.js) ================= */
+/* ================= On-screen controller (js/ui/pad-skin.js) =================
+   The whole WaveBlue skin is drawn over the page; the game and every screen sit
+   inside its screen window (--sx/--sy/--sw/--sh, set by pad-skin.js). */
 #pad-skin { display: none; }
 body.skin #pad-skin {
-  display: block; position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
-  touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
-  background: #050914;
+  display: block; position: fixed; inset: 0; z-index: 60; pointer-events: none;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
 }
-#pad-skin img { display: block; width: 100%; height: 100%; pointer-events: none; image-rendering: auto; }
+body.skin #pad-skin::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: var(--fill, 0px); background: #000; }
+#pad-skin img { position: absolute; left: 0; width: 100%; pointer-events: none; image-rendering: auto; }
+#pad-skin .pad-hit { position: absolute; left: 0; right: 0; pointer-events: auto; touch-action: none; }
 #pad-skin .pad-glow { position: absolute; border-radius: 50%; pointer-events: none; opacity: 0; transition: opacity .06s; }
 #pad-skin .pad-glow.on { opacity: 1; }
 #pad-skin .pad-a, #pad-skin .pad-b, #pad-skin .pad-start, #pad-skin .pad-select { background: radial-gradient(circle, rgba(255,255,255,.38), rgba(255,255,255,0) 70%); }
 #pad-skin .pad-l, #pad-skin .pad-r, #pad-skin .pad-menu { border-radius: 999px; background: rgba(255,255,255,.22); }
 #pad-skin .pad-dpad { background: radial-gradient(circle at calc(50% + var(--ox, 0%)) calc(50% + var(--oy, 0%)), rgba(255,255,255,.4), rgba(255,255,255,0) 30%); }
-/* Everything else lives in the space above the controller. */
-body.skin #game { bottom: auto; height: calc(100% - var(--ctrl-h, 0px)); }
-body.skin .scr, body.skin #pull-fx, body.skin #tap-start, body.skin .boot { bottom: var(--ctrl-h, 0px) !important; }
-body.skin .scr { overflow-y: auto; }
+body.skin { background: #000; }
+/* The game screen and every overlay live in the window. */
+body.skin #game { inset: auto; left: var(--sx); top: var(--sy); width: var(--sw); height: var(--sh); }
+body.skin .scr, body.skin #pull-fx, body.skin #tap-start, body.skin .boot, body.skin #rotate {
+  inset: auto !important; left: var(--sx) !important; top: var(--sy) !important;
+  width: var(--sw) !important; height: var(--sh) !important; border-radius: var(--sr);
+}
+body.skin .scr { overflow-y: auto; padding: 8px; align-items: flex-start; }
+body.skin .scr > .box { margin: auto 0; max-width: 100%; }
+@media (min-height: 521px) {
+  body.skin #scr-goals, body.skin #scr-dex, body.skin #scr-upgrades, body.skin #scr-gacha, body.skin #scr-friends, body.skin #scr-rank,
+  body.skin #scr-lobby, body.skin #scr-profile, body.skin #scr-shop, body.skin #scr-news { padding-top: 40px; }
+}
+body.skin .topbar { top: calc(var(--sy) + 4px) !important; left: calc(var(--sx) + 4px) !important; right: calc(100% - var(--sx) - var(--sw) + 4px) !important; }
 body.skin .credits-line { display: none !important; }
-body.skin #scr-menu { padding-bottom: 8px; }
+body.skin .box { padding: 12px; }
+body.skin #offline-pill { bottom: auto; top: calc(var(--sy) + var(--sh) + 3px); max-width: calc(var(--sw) * .5); font-size: 9px; padding: 1px 8px; border-width: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* sits in the bezel, between LOAD and SAVE */
+/* Main menu inside the window. */
+body.skin #scr-menu { padding: 0; justify-content: flex-start; }
+body.skin .menu-left { padding-top: 36px; }
+body.skin .menu-left .logo .t1 { font-size: 22px; }
+body.skin .menu-left .logo .t2 { font-size: 10px; }
+body.skin .hw-count { transform: scale(.8); margin: 0; }
+body.skin .partner-card { margin-top: 0; }
+body.skin .partner-card canvas.stage { width: 92px; }
+body.skin .partner-card .lv { font-size: 11px; }
+body.skin .partner-card .nm { font-size: 15px; }
+body.skin .menu-right { padding: 6px 8px 8px; }
 /* Portrait only: the rotate hint asks for upright (the icon turns the other way). */
 #rotate #rotate-ico { animation-direction: reverse; }
-
-/* Main menu squeezed into the space above the controller. */
-body.skin #scr-menu { justify-content: flex-start; }
-body.skin .menu-left { padding-top: calc(52px + env(safe-area-inset-top)); }
-body.skin .menu-left .logo .t1 { font-size: 30px; }
-body.skin .menu-left .logo .t2 { font-size: 11px; }
-body.skin .hw-count { transform: scale(.8); margin: 2px 0 0; }
-body.skin .partner-card { margin-top: 0; }
-body.skin .partner-card canvas.stage { width: 150px; }
-body.skin .partner-card .nm { font-size: 17px; }
-body.skin #offline-pill { bottom: calc(var(--ctrl-h, 0px) + 8px); }
-body.skin #offline-pill { bottom: auto; top: calc(118px + env(safe-area-inset-top)); }
+body.skin #menu-partner { width: 92px !important; height: auto !important; }
+body.skin #menu-hw { display: none !important; }
