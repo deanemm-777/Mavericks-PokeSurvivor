@@ -29,20 +29,36 @@ G.Pad = (() => {
   let focus = null, focusScope = null, showing = false;
   let navDir = null, navT = 0;
 
-  const enabled = () => G.Settings.get('gamepad') !== false;
+  const enabled = () => (G.PadSkin && G.PadSkin.active) || G.Settings.get('gamepad') !== false;
   function pad() {
+    if (G.PadSkin && G.PadSkin.active) return skinPad();
     if (!navigator.getGamepads) return null;
     for (const p of navigator.getGamepads()) if (p && p.connected) return p;
     return null;
   }
+  /*
+   * The on-screen controller (ui/pad-skin.js) as a "standard" gamepad. Its few
+   * buttons do different jobs in a run and in menus, so they are placed on the
+   * pad slots that the code below already reads for each.
+   */
+  function skinPad() {
+    const s = G.PadSkin.state(), b = new Array(17).fill(false);
+    if (uiMode()) {
+      b[BT.A] = s.a; b[BT.B] = s.b; b[BT.Y] = s.select; b[BT.START] = s.start || s.menu;
+    } else {
+      b[BT.X] = s.a; b[BT.Y] = s.b; b[BT.LB] = s.l; b[BT.RB] = s.r; b[BT.START] = s.start || s.menu; b[BT.A] = s.select;
+    }
+    b[BT.UP] = s.up; b[BT.DOWN] = s.down; b[BT.LEFT] = s.left; b[BT.RIGHT] = s.right;
+    return { connected: true, id: 'On-screen controller', axes: [0, 0, 0, 0], buttons: b.map(v => ({ pressed: v, value: v ? 1 : 0 })) };
+  }
 
   addEventListener('gamepadconnected', e => {
     name = e.gamepad.id || '';
-    if (enabled() && G.UI && G.UI.toast) G.UI.toast('Mando conectado', 2200);
+    if (enabled() && G.UI && G.UI.toast && !(G.PadSkin && G.PadSkin.active)) G.UI.toast('Mando conectado', 2200);
   });
   addEventListener('gamepaddisconnected', () => { if (!pad()) { name = ''; hideFocus(); } });
   // Si vuelves al ratón o a la pantalla táctil, se quita el recuadro.
-  for (const ev of ['mousemove', 'pointerdown']) addEventListener(ev, e => { if (e.isTrusted && (e.movementX || e.movementY || ev === 'pointerdown')) hideFocus(); });
+  for (const ev of ['mousemove', 'pointerdown']) addEventListener(ev, e => { if (G.PadSkin && G.PadSkin.owns(e.target)) return; if (e.isTrusted && (e.movementX || e.movementY || ev === 'pointerdown')) hideFocus(); });
 
   // ---------------- qué pantalla manda ----------------
 
@@ -98,7 +114,8 @@ G.Pad = (() => {
         // Que se vea de verdad (no tapado por otra cosa).
         const cx = Math.min(W - 1, Math.max(0, r.left + r.width / 2)), cy = Math.min(H - 1, Math.max(0, r.top + r.height / 2));
         const hit = document.elementFromPoint(cx, cy);
-        if (hit && !el.contains(hit) && !hit.contains(el)) continue;
+        // (Scrolled out of view behind the on-screen controller or the game canvas still counts: choosing it scrolls it into view.)
+        if (hit && !el.contains(hit) && !hit.contains(el) && !(G.PadSkin && G.PadSkin.owns(hit)) && hit.id !== 'game') continue;
         out.push(el);
       }
     }
@@ -259,6 +276,7 @@ G.Pad = (() => {
       if (hit(BT.Y)) G.Input.virtual('keyr');
       const ry = p.axes[3] || 0;
       if (Math.abs(ry) > DEAD) scrollLists(ry, dt);
+      if (G.PadSkin && G.PadSkin.active) { const s = G.PadSkin.state(); if (s.l || s.r) scrollLists(s.r ? 1 : -1, dt); }
     } else {
       if (showing) hideFocus();
       navDir = null;

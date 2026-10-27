@@ -74,7 +74,7 @@ def copy(rel):
         shutil.copy(src, os.path.join(out, rel))
 for rel in ['js/app.min.js', 'js/boot.js', 'js/core/locales.js', 'css/style.css', 'favicon.ico']:
     copy(rel)
-for d in ['js/lang', 'assets/fonts', 'assets/icons']:
+for d in ['js/lang', 'assets/fonts', 'assets/icons', 'assets/skin']:
     for f in os.listdir(os.path.join(root, d)):
         copy(d + '/' + f)
 

@@ -29,7 +29,9 @@ G.Camera = {
     // Portrait support: measure against the long and short sides, so a phone held
     // upright sees the same amount of world (and same sprite size) as sideways.
     const long = Math.max(this._cw, this._ch), short = Math.min(this._cw, this._ch);
-    this.scale = Math.min(long / this.VIEW_W, short / this.MIN_VIEW_H) / this.zoom;
+    this.scale = (G.PadSkin && G.PadSkin.active
+      ? Math.min(short / 470, long / 560)              // on-screen controller: smaller screen, keep sprites readable
+      : Math.min(long / this.VIEW_W, short / this.MIN_VIEW_H)) / this.zoom;
     this.w = this._cw / this.scale;
     this.h = this._ch / this.scale;
   },

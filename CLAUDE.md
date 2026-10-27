@@ -14,3 +14,4 @@ Personal, non-commercial build: no accounts, no cloud, no co-op, no ranking.
 - `sw.js` + `offline-files.js` + `tools/make_offline_list.js`: downloads every file once, then runs fully offline.
 - Updater, YouTube live banner, Friends/Ranking/Support/Log out buttons disabled or hidden (`.offline-hide`).
 - Halloween event uses the phone clock when offline.
+- `js/ui/pad-skin.js` + `assets/skin/`: on-screen controller from the WaveBlue Delta skin, fed into `js/core/gamepad.js` as a virtual pad. Portrait only (landscape shows a "turn your phone upright" notice).

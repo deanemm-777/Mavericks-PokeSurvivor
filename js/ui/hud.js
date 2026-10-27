@@ -449,7 +449,7 @@ G.HUD = (() => {
         }
         ctx.font = F(800, 9);
         // Con mando: X usa la elegida, Y pasa a la siguiente (las teclas 5-8 no sirven ahí).
-        if (G.Pad.name) { ctx.textAlign = 'left'; ctx.fillStyle = pick ? '#ffd23f' : 'rgba(180,200,230,.7)'; ctx.fillText(pick ? 'X' : 'Y', x + 3, oy + 10); }
+        if (G.Pad.name) { const sk = G.PadSkin && G.PadSkin.active; ctx.textAlign = 'left'; ctx.fillStyle = pick ? '#ffd23f' : 'rgba(180,200,230,.7)'; ctx.fillText(pick ? (sk ? 'A' : 'X') : (sk ? 'B' : 'Y'), x + 3, oy + 10); }
         else if (!touch) { ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(180,200,230,.7)'; ctx.fillText(String(i + 5), x + 3, oy + 10); }
         if (o.n > 1) { ctx.textAlign = 'right'; ctx.fillStyle = '#f4f8ff'; ctx.fillText('×' + o.n, x + OS - 3, oy + OS - 4); }
       }
@@ -500,7 +500,8 @@ G.HUD = (() => {
       ctx.font = F(600, 10);
       ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(180,200,230,.55)';
-      ctx.fillText(touch ? 'Arrastra el dedo para moverte  ·  toca un ataque para cambiarlo'
+      ctx.fillText(G.PadSkin && G.PadSkin.active ? 'D-pad to move  ·  L / R switch move  ·  START pause'
+                       : touch ? 'Arrastra el dedo para moverte  ·  toca un ataque para cambiarlo'
                          : 'WASD moverse  ·  1-4 / Q / E o clic en un ataque para cambiarlo  ·  Esc pausa', w / 2, h - 4);
     }
 

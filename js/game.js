@@ -119,7 +119,7 @@ G.Game = (() => {
 
   /** Móvil en vertical: aviso de girarlo (y pausa). */
   function checkOrientation() {
-    const portrait = false;            // standalone build: portrait is supported
+    const portrait = G.Touch.active && innerWidth > innerHeight;   // standalone build: portrait only (the name is kept from upstream)
     const el = document.getElementById('rotate');
     if (!el) return;
     if (portrait && !document.getElementById('rotate-ico').innerHTML) document.getElementById('rotate-ico').innerHTML = G.Icons.html('phone', 48);
@@ -1084,6 +1084,7 @@ G.Flow = {
     document.getElementById('user-pill').onclick = () => G.GoalsUI.open('profile');
     G.Audio.music('village');     // suena tras el primer clic (lo exige el navegador)
     G.Game.init();
+    G.PadSkin.init();
     // La base de datos (nube o local) recupera la sesión anterior.
     G.DB.ready().then(restored => {
       document.getElementById('boot').classList.add('hidden');

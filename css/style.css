@@ -1126,3 +1126,37 @@ html:lang(zh) .btn, html:lang(zh) .chip { letter-spacing: 0; }
   background: rgba(10,18,40,.9); color: #cfe0ff; border: 2px solid #4a6fb5; pointer-events: none;
 }
 #offline-pill.done { border-color: #5fe08a; color: #d8ffe4; }
+
+/* ================= On-screen controller (js/ui/pad-skin.js) ================= */
+#pad-skin { display: none; }
+body.skin #pad-skin {
+  display: block; position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+  touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+  background: #050914;
+}
+#pad-skin img { display: block; width: 100%; height: 100%; pointer-events: none; image-rendering: auto; }
+#pad-skin .pad-glow { position: absolute; border-radius: 50%; pointer-events: none; opacity: 0; transition: opacity .06s; }
+#pad-skin .pad-glow.on { opacity: 1; }
+#pad-skin .pad-a, #pad-skin .pad-b, #pad-skin .pad-start, #pad-skin .pad-select { background: radial-gradient(circle, rgba(255,255,255,.38), rgba(255,255,255,0) 70%); }
+#pad-skin .pad-l, #pad-skin .pad-r, #pad-skin .pad-menu { border-radius: 999px; background: rgba(255,255,255,.22); }
+#pad-skin .pad-dpad { background: radial-gradient(circle at calc(50% + var(--ox, 0%)) calc(50% + var(--oy, 0%)), rgba(255,255,255,.4), rgba(255,255,255,0) 30%); }
+/* Everything else lives in the space above the controller. */
+body.skin #game { bottom: auto; height: calc(100% - var(--ctrl-h, 0px)); }
+body.skin .scr, body.skin #pull-fx, body.skin #tap-start, body.skin .boot { bottom: var(--ctrl-h, 0px) !important; }
+body.skin .scr { overflow-y: auto; }
+body.skin .credits-line { display: none !important; }
+body.skin #scr-menu { padding-bottom: 8px; }
+/* Portrait only: the rotate hint asks for upright (the icon turns the other way). */
+#rotate #rotate-ico { animation-direction: reverse; }
+
+/* Main menu squeezed into the space above the controller. */
+body.skin #scr-menu { justify-content: flex-start; }
+body.skin .menu-left { padding-top: calc(52px + env(safe-area-inset-top)); }
+body.skin .menu-left .logo .t1 { font-size: 30px; }
+body.skin .menu-left .logo .t2 { font-size: 11px; }
+body.skin .hw-count { transform: scale(.8); margin: 2px 0 0; }
+body.skin .partner-card { margin-top: 0; }
+body.skin .partner-card canvas.stage { width: 150px; }
+body.skin .partner-card .nm { font-size: 17px; }
+body.skin #offline-pill { bottom: calc(var(--ctrl-h, 0px) + 8px); }
+body.skin #offline-pill { bottom: auto; top: calc(118px + env(safe-area-inset-top)); }
