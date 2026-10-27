@@ -16,14 +16,16 @@
  * Tapping the screen directly still works everywhere.
  *
  * Layout numbers come from the skin's info.json (assets/skin/waveblue-info.json),
- * in its 414-wide mapping space. The whole skin is drawn (assets/skin/device.png,
- * the original art with its screen window enlarged to SCREEN), anchored to the
- * bottom of the phone, and the game sits exactly in that window. CROP is where
- * the controls start.
+ * in its 414-wide mapping space. The skin is drawn in two parts so it fits any
+ * screen shape:
+ *   controls.png   everything below CROP, full width, never stretched
+ *   shell-top.png  the shell and bezel above it, drawn as a stretchable frame
+ *                  (CSS border-image, BEZEL widths); its open middle is the
+ *                  game's screen window, which gets whatever height is left.
  */
 G.PadSkin = (() => {
   const MAP_W = 414, MAP_H = 898, CROP = 492;
-  const SCREEN = [14, 54, 386, 414];   // the window punched in the bezel: x, y, w, h (keep in sync with device.png)
+  const BEZEL = { top: 54, right: 14, bottom: 24, left: 14 };   // frame widths of shell-top.png (its window is 14..400 x 54..468)
   // frame = [x, y, w, h], ext = extra touch margin [top, right, bottom, left]
   const ITEMS = [
     { id: 'dpad',   f: [35, 612, 142, 142], e: [12, 12, 12, 12] },
@@ -37,15 +39,18 @@ G.PadSkin = (() => {
   ];
   const state = { up: false, down: false, left: false, right: false, a: false, b: false, l: false, r: false, start: false, select: false, menu: false };
   const pointers = new Map();        // pointerId -> control id (or 'dpad')
-  let root = null, img = null, pad = null, glows = {}, k = 1, active = false;
+  let root = null, shell = null, img = null, pad = null, glows = {}, k = 1, active = false;
 
   function build() {
     // root: the whole skin over the page (lets touches through); pad: the controls, which take them.
     root = document.createElement('div');
     root.id = 'pad-skin';
     root.setAttribute('aria-label', 'Controller');
+    shell = document.createElement('div');
+    shell.className = 'pad-shell';
+    root.appendChild(shell);
     img = document.createElement('img');
-    img.src = 'assets/skin/device.png';
+    img.src = 'assets/skin/controls.png';
     img.alt = '';
     img.draggable = false;
     root.appendChild(img);
@@ -80,26 +85,31 @@ G.PadSkin = (() => {
       if (!active) release();
     }
     if (!root) return;
-    k = innerWidth / MAP_W;
-    const H = innerHeight, top = H - MAP_H * k;                 // skin anchored to the bottom edge
-    img.style.top = top + 'px';
-    img.style.height = MAP_H * k + 'px';
-    root.style.setProperty('--fill', Math.max(0, Math.ceil(top)) + 'px');   // taller phones: plain bezel above
-    pad.style.top = top + CROP * k + 'px';
-    pad.style.height = (MAP_H - CROP) * k + 'px';
-    // The game window, in page pixels. On short phones the top of the skin is cut
-    // off, so the window starts just below the status bar instead.
+    const W = innerWidth, H = innerHeight;
+    // Full width, unless that leaves the screen under ~42% of the height (short
+    // phones, or inside the Claude app): then the whole device shrinks a little
+    // and sits centered with black at the sides, as Delta does.
+    k = Math.min(W / MAP_W, 0.58 * H / (MAP_H - CROP + BEZEL.top + BEZEL.bottom));
+    const dw = MAP_W * k, ox = Math.round((W - dw) / 2);
+    for (const el of [shell, img, pad]) { el.style.left = ox + 'px'; el.style.width = dw + 'px'; }
+    const ch = (MAP_H - CROP) * k, ctop = H - ch;
+    img.style.top = ctop + 'px';
+    img.style.height = ch + 'px';
+    pad.style.top = ctop + 'px';
+    pad.style.height = ch + 'px';
+    // The shell frame fills everything above the controls. Its top band grows
+    // when needed so the window always starts below the status bar / Dynamic Island.
     const safeTop = G.Touch.safeArea().top;
-    let sy = top + SCREEN[1] * k;
-    const sb = top + (SCREEN[1] + SCREEN[3]) * k;
-    sy = Math.max(sy, safeTop + 4, 0);
+    const bt = Math.max(BEZEL.top * k, safeTop + 6), br = BEZEL.right * k, bb = BEZEL.bottom * k, bl = BEZEL.left * k;
+    shell.style.height = ctop + 'px';
+    shell.style.borderWidth = `${bt}px ${br}px ${bb}px ${bl}px`;
     const css = document.documentElement.style;
-    css.setProperty('--sx', SCREEN[0] * k + 'px');
-    css.setProperty('--sy', sy + 'px');
-    css.setProperty('--sw', SCREEN[2] * k + 'px');
-    css.setProperty('--sh', Math.max(120, sb - sy) + 'px');
+    css.setProperty('--sx', ox + bl + 'px');
+    css.setProperty('--sy', bt + 'px');
+    css.setProperty('--sw', (dw - bl - br) + 'px');
+    css.setProperty('--sh', Math.max(100, ctop - bt - bb) + 'px');
     css.setProperty('--sr', 12 * k + 'px');
-    css.setProperty('--ctrl-h', (MAP_H - CROP) * k + 'px');
+    css.setProperty('--ctrl-h', ch + 'px');
     for (const it of ITEMS) {
       const r = rect(it, false), g = glows[it.id];
       g.style.left = r.x + 'px'; g.style.top = r.y + 'px';

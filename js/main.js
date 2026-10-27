@@ -69,11 +69,11 @@
     };
     navigator.serviceWorker.addEventListener('message', e => {
       const m = e.data || {};
-      if (m.type === 'offline-progress' && m.done < m.total) show('Downloading for offline play: ' + Math.floor(m.done / m.total * 100) + '%');
+      if (m.type === 'offline-progress' && m.done < m.total) show('Offline download ' + Math.floor(m.done / m.total * 100) + '%');
       else if (m.type === 'offline-ready') {
         let first = true;
         try { first = !localStorage.getItem(KEY); localStorage.setItem(KEY, '1'); } catch (err) { /* nada */ }
-        if (first) show('Ready to play offline', true); else if (pill) { pill.remove(); pill = null; }
+        if (first) show('Ready offline', true); else if (pill) { pill.remove(); pill = null; }
       } else if (m.type === 'offline-partial') show('Offline download paused (' + Math.floor(m.done / m.total * 100) + '%), it resumes next time you open the game online', true);
     });
     navigator.serviceWorker.ready.then(reg => {

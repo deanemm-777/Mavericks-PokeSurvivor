@@ -1135,9 +1135,15 @@ body.skin #pad-skin {
   display: block; position: fixed; inset: 0; z-index: 60; pointer-events: none;
   -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
 }
-body.skin #pad-skin::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: var(--fill, 0px); background: #000; }
-#pad-skin img { position: absolute; left: 0; width: 100%; pointer-events: none; image-rendering: auto; }
-#pad-skin .pad-hit { position: absolute; left: 0; right: 0; pointer-events: auto; touch-action: none; }
+/* The shell above the controls: a 9-slice frame of shell-top.png (1242 px wide = 414 mapping units x3). */
+#pad-skin .pad-shell {
+  position: absolute; top: 0; box-sizing: border-box; border-style: solid;
+  border-image: url("../assets/skin/shell-top.png") 162 42 72 42 stretch;
+}
+/* Rounded screen corners, like the window in the art. */
+body.skin #game { border-radius: var(--sr); }
+#pad-skin img { position: absolute; pointer-events: none; image-rendering: auto; }
+#pad-skin .pad-hit { position: absolute; pointer-events: auto; touch-action: none; }
 #pad-skin .pad-glow { position: absolute; border-radius: 50%; pointer-events: none; opacity: 0; transition: opacity .06s; }
 #pad-skin .pad-glow.on { opacity: 1; }
 #pad-skin .pad-a, #pad-skin .pad-b, #pad-skin .pad-start, #pad-skin .pad-select { background: radial-gradient(circle, rgba(255,255,255,.38), rgba(255,255,255,0) 70%); }
@@ -1156,7 +1162,7 @@ body.skin .scr > .box { margin: auto 0; max-width: 100%; }
   body.skin #scr-goals, body.skin #scr-dex, body.skin #scr-upgrades, body.skin #scr-gacha, body.skin #scr-friends, body.skin #scr-rank,
   body.skin #scr-lobby, body.skin #scr-profile, body.skin #scr-shop, body.skin #scr-news { padding-top: 40px; }
 }
-body.skin .topbar { top: calc(var(--sy) + 4px) !important; left: calc(var(--sx) + 4px) !important; right: calc(100% - var(--sx) - var(--sw) + 4px) !important; }
+body.skin .topbar { top: calc(var(--sy) + 4px) !important; left: calc(var(--sx) + 4px) !important; right: calc(100% - var(--sx) - var(--sw) + 4px) !important; width: auto; }
 body.skin .credits-line { display: none !important; }
 body.skin .box { padding: 12px; }
 body.skin #offline-pill { bottom: auto; top: calc(var(--sy) + var(--sh) + 3px); max-width: calc(var(--sw) * .5); font-size: 9px; padding: 1px 8px; border-width: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* sits in the bezel, between LOAD and SAVE */
