@@ -91,7 +91,7 @@ G.Sprites = (() => {
     if (s) {
       s.at = now;
       // Si la descarga se cortó (red mala, servidor saturado), reintenta más tarde.
-      if (s.failed && performance.now() > s.retryAt) { s.failed = false; s.img.src = s.src + '?r=' + s.tries; }
+      if (s.failed && performance.now() > s.retryAt && !(typeof window !== 'undefined' && window.PS_RESOLVE_SPRITE)) { s.failed = false; s.img.src = s.src + '?r=' + s.tries; }
       return s;
     }
     if (sheets.size >= MAX_SHEETS) evict(now);
@@ -99,7 +99,9 @@ G.Sprites = (() => {
           src: `assets/pokemon/${dex}/${skin ? 'k-' + skin + '/' : ''}${shiny ? 's/' : ''}${name}.png` };
     s.img.onload = () => { s.ready = true; };
     s.img.onerror = () => { s.failed = true; s.retryAt = performance.now() + 1000 * Math.min(8, 2 ** s.tries++); };
-    s.img.src = s.src;
+    // Hook for builds that ship sprites packed (the in-chat demo): it hands back a URL to use.
+    if (typeof window !== 'undefined' && window.PS_RESOLVE_SPRITE) window.PS_RESOLVE_SPRITE(s.src, url => { s.img.src = url; });
+    else s.img.src = s.src;
     sheets.set(k, s);
     return s;
   }
