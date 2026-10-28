@@ -272,7 +272,13 @@ G.Pad = (() => {
       else if (dir && (navT -= dt) <= 0) { navT = 0.14; step(dir); }
       if (hit(BT.A)) press();
       if (hit(BT.B) || hit(BT.BACK)) back();
-      if (hit(BT.START)) G.Input.virtual('escape');
+      if (hit(BT.START)) {
+        // START: begins a run from the main menu (and gets past "tap to start"); elsewhere it closes / resumes.
+        const top = topScreen(), tap = document.getElementById('tap-start');
+        if (tap && !tap.classList.contains('hidden')) tap.click();
+        else if (top && top.id === 'scr-menu') { const play = top.querySelector('[data-go=play]'); if (play) play.click(); }
+        else G.Input.virtual('escape');
+      }
       if (hit(BT.Y)) G.Input.virtual('keyr');
       const ry = p.axes[3] || 0;
       if (Math.abs(ry) > DEAD) scrollLists(ry, dt);

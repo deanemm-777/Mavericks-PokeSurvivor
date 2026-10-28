@@ -7,12 +7,12 @@
  *               L / R        previous / next move
  *               A            use the selected orb
  *               B            switch orb
- *               START, Home  pause
+ *               START, Home  pause / resume
  *               SELECT       skip the Arceus cutscene
  *   In menus:   D-pad        move the gold selection box
  *               A            press      B  back
  *               L / R        scroll the list      SELECT  reroll the cards
- *               START        pause / close
+ *               START        start a run (main menu), resume (pause), close (other screens)
  * Tapping the screen directly still works everywhere.
  *
  * Layout numbers come from the skin's info.json (assets/skin/waveblue-info.json),
@@ -25,7 +25,7 @@
  */
 G.PadSkin = (() => {
   const MAP_W = 414, MAP_H = 898, CROP = 492;
-  const BEZEL = { top: 54, right: 14, bottom: 24, left: 14 };   // frame widths of shell-top.png (its window is 14..400 x 54..468)
+  const BEZEL = { top: 54, right: 14, bottom: 6, left: 14 };    // frame widths of shell-top.png (its window is 14..400 x 54..486; LOAD/SAVE painted out)
   // frame = [x, y, w, h], ext = extra touch margin [top, right, bottom, left]
   const ITEMS = [
     { id: 'dpad',   f: [35, 612, 142, 142], e: [12, 12, 12, 12] },

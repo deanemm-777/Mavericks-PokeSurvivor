@@ -1138,7 +1138,7 @@ body.skin #pad-skin {
 /* The shell above the controls: a 9-slice frame of shell-top.png (1242 px wide = 414 mapping units x3). */
 #pad-skin .pad-shell {
   position: absolute; top: 0; box-sizing: border-box; border-style: solid;
-  border-image: url("../assets/skin/shell-top.png") 162 42 72 42 stretch;
+  border-image: url("../assets/skin/shell-top.png") 162 42 18 42 stretch;
 }
 /* Rounded screen corners, like the window in the art. */
 body.skin #game { border-radius: var(--sr); }
@@ -1165,7 +1165,7 @@ body.skin .scr > .box { margin: auto 0; max-width: 100%; }
 body.skin .topbar { top: calc(var(--sy) + 4px) !important; left: calc(var(--sx) + 4px) !important; right: calc(100% - var(--sx) - var(--sw) + 4px) !important; width: auto; }
 body.skin .credits-line { display: none !important; }
 body.skin .box { padding: 12px; }
-body.skin #offline-pill { bottom: auto; top: calc(var(--sy) + var(--sh) + 3px); max-width: calc(var(--sw) * .5); font-size: 9px; padding: 1px 8px; border-width: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* sits in the bezel, between LOAD and SAVE */
+body.skin #offline-pill { bottom: auto; top: calc(var(--sy) + var(--sh) + 2px); max-width: calc(var(--sw) * .5); font-size: 9px; padding: 1px 8px; border-width: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* sits in the bezel, between LOAD and SAVE */
 /* Portrait only: the rotate hint asks for upright (the icon turns the other way). */
 #rotate #rotate-ico { animation-direction: reverse; }
 
@@ -1194,7 +1194,7 @@ body.skin .partner-card .nm { font-size: 14px; text-shadow: 1px 1px 0 var(--shad
 body.skin .partner-card .lv { font-size: 10px; }
 body.skin .partner-card .lv .type, body.skin .partner-card .lv span { font-size: 9px; padding: 0 5px; }
 body.skin #menu-shiny { grid-column: 2; margin: 2px 0 0; zoom: .8; }
-body.skin .menu-right { width: auto; padding: 6px 8px 8px; gap: 6px; background: none; flex: 1 0 auto; }
+body.skin .menu-right { width: auto; padding: 6px 6px 6px; gap: 6px; background: none; flex: 0 0 auto; margin-top: auto; }   /* rests on the bottom bezel */
 body.skin .menu-right .box { padding: 4px 6px; border-width: 2px; }
 body.skin .menu-right > .box:last-child { display: none; }
 body.skin .menu-list { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 4px; }
@@ -1205,3 +1205,6 @@ body.skin .menu-item.play small { display: block; font-size: 9px; }
 body.skin .menu-item img, body.skin .menu-item canvas, body.skin .menu-item .ico { width: 18px; height: 18px; }
 body.skin .menu-item::before { display: none; }
 body.skin .menu-item.pad-focus, body.skin .menu-item:hover { background: rgba(255,255,255,.1); }
+.skin-hint { display: none; }
+body.skin .skin-hint { display: block; }
+body.skin .touch-hint, body.skin .kbd-hint { display: none !important; }
