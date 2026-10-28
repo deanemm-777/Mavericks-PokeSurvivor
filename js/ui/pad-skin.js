@@ -78,7 +78,9 @@ G.PadSkin = (() => {
 
   function layout() {
     const portrait = innerHeight >= innerWidth;
-    const want = portrait && (G.Touch.active || innerWidth < 700);
+    const want = portrait && (G.Touch.active || innerWidth < 700) && G.Settings.get('theme') !== 'full';   // Theme in the main menu
+    // Full-screen theme in portrait gets its own compact menu layout (css: body.fullp).
+    document.body.classList.toggle('fullp', portrait && !want && (G.Touch.active || innerWidth < 700));
     if (want !== active) {
       active = want;
       document.body.classList.toggle('skin', active);
@@ -187,6 +189,7 @@ G.PadSkin = (() => {
     build();
     layout();
     addEventListener('resize', layout);
+    G.Settings.on(k => { if (k === 'theme') { layout(); dispatchEvent(new Event('resize')); } });
     addEventListener('orientationchange', () => setTimeout(layout, 150));
     if (window.visualViewport) visualViewport.addEventListener('resize', layout);
     addEventListener('blur', release);

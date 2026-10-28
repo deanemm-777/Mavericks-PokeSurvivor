@@ -15,3 +15,4 @@ Personal, non-commercial build: no accounts, no cloud, no co-op, no ranking.
 - Updater, YouTube live banner, Friends/Ranking/Support/Log out buttons disabled or hidden (`.offline-hide`).
 - Halloween event uses the phone clock when offline.
 - `js/ui/pad-skin.js` + `assets/skin/`: on-screen controller from the WaveBlue Delta skin, fed into `js/core/gamepad.js` as a virtual pad. Portrait only (landscape shows a "turn your phone upright" notice).
+- Theme item in the main menu (`theme` setting: 'gameboy' | 'full'): WaveBlue skin, or full screen with the touch joystick (`body.fullp` styles in portrait).

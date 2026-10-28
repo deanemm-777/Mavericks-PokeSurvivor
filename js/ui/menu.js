@@ -10,7 +10,7 @@ G.MenuUI = (() => {
   const SORTS = [['num', 'Nº'], ['name', 'Nombre'], ['rar', 'Rareza'], ['new', 'Recién conseguidos'], ['used', 'Más usados']];
 
   function init() {
-    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', shop: 'shop', bag: 'bag', gacha: 'ball4', goals: 'medal3', friends: 'friends', rank: 'trophy', settings: 'gear' };
+    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', shop: 'shop', bag: 'bag', gacha: 'ball4', goals: 'medal3', friends: 'friends', rank: 'trophy', settings: 'gear', theme: 'phone' };
     document.querySelectorAll('#scr-menu [data-go]').forEach(b => {
       b.insertAdjacentHTML('afterbegin', `<span class="mi-ico">${G.Icons.html(ICON[b.dataset.go], 26)}</span>`);
       b.dataset.sfx = b.dataset.go === 'play' ? 'confirm' : 'click';
@@ -26,6 +26,13 @@ G.MenuUI = (() => {
         else if (go === 'friends') G.FriendsUI.open();
         else if (go === 'rank') G.RankingUI.open();
         else if (go === 'settings') G.SettingsUI.open();
+        else if (go === 'theme') {
+          // Standalone build: Game Boy skin <-> full screen with the touch joystick.
+          const full = G.Settings.get('theme') !== 'full';
+          G.Settings.set('theme', full ? 'full' : 'gameboy');
+          themeLine();
+          G.UI.toast(full ? 'Theme: full screen with joystick' : 'Theme: Game Boy skin', 2000);
+        }
       };
     });
     document.querySelectorAll('[data-back]').forEach(b => { b.onclick = open; });
@@ -39,7 +46,13 @@ G.MenuUI = (() => {
 
   // ---------------- menú principal ----------------
 
+  function themeLine() {
+    const el = $('menu-theme-sub');
+    if (el) el.textContent = G.Settings.get('theme') === 'full' ? 'Full screen + joystick' : 'Game Boy skin';
+  }
+
   function open() {
+    themeLine();
     const s = G.DB.save;
     const mon = G.DEX_BY[s.partner];
     const shiny = !!s.partnerShiny && G.DB.ownsShiny(mon.dex);
