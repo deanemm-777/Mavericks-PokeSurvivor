@@ -75,7 +75,8 @@ const CSS = '<link rel="stylesheet" href="css/style.css">';
 if (!dev.includes(CSS)) throw new Error('dev.html no carga ' + CSS + ' como se esperaba: revisa build.js');
 const cssHash = crypto.createHash('sha1').update(fs.readFileSync(path.join(ROOT, 'css', 'style.css'))).digest('hex').slice(0, 10);
 html = html.replace(CSS, `<link rel="stylesheet" href="css/style.css?v=${cssHash}">`);
-html = html.replace(/<meta name="robots" content="noindex">\s*/, '');
+// standalone build: keep noindex (personal copy)
+// html = html.replace(/<meta name="robots" content="noindex">\s*/, '');
 // --sin-seo: sin canonical/redes/datos estructurados ni enlaces a las páginas
 // (para publicar antes de tener el dominio pokesurvivor.com).
 const SIN_SEO = process.argv.includes('--sin-seo');
