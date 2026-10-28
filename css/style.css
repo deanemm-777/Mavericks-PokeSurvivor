@@ -1166,18 +1166,42 @@ body.skin .topbar { top: calc(var(--sy) + 4px) !important; left: calc(var(--sx) 
 body.skin .credits-line { display: none !important; }
 body.skin .box { padding: 12px; }
 body.skin #offline-pill { bottom: auto; top: calc(var(--sy) + var(--sh) + 3px); max-width: calc(var(--sw) * .5); font-size: 9px; padding: 1px 8px; border-width: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* sits in the bezel, between LOAD and SAVE */
-/* Main menu inside the window. */
-body.skin #scr-menu { padding: 0; justify-content: flex-start; }
-body.skin .menu-left { padding-top: 36px; }
-body.skin .menu-left .logo .t1 { font-size: 22px; }
-body.skin .menu-left .logo .t2 { font-size: 10px; }
-body.skin .hw-count { transform: scale(.8); margin: 0; }
-body.skin .partner-card { margin-top: 0; }
-body.skin .partner-card canvas.stage { width: 92px; }
-body.skin .partner-card .lv { font-size: 11px; }
-body.skin .partner-card .nm { font-size: 15px; }
-body.skin .menu-right { padding: 6px 8px 8px; }
 /* Portrait only: the rotate hint asks for upright (the icon turns the other way). */
 #rotate #rotate-ico { animation-direction: reverse; }
-body.skin #menu-partner { width: 92px !important; height: auto !important; }
-body.skin #menu-hw { display: none !important; }
+
+/* ============ Menus sized for the handheld screen (controller mode) ============
+   Every screen's content is scaled down to fit the small window, and the
+   main menu becomes a compact handheld-style menu: top bar, partner strip, list. */
+body.skin .scr > *, body.skin #pull-fx > * { zoom: .78; }
+body.skin .scr { padding: 6px; }
+body.skin .scr > .box { border-width: 2px; }
+
+/* Top bar: one slim row along the top of the screen. */
+body.skin .topbar { gap: 3px !important; flex-wrap: nowrap; justify-content: space-between; top: calc(var(--sy) + 5px) !important; }
+body.skin .topbar .pill { padding: 1px 6px; font-size: 10px; gap: 3px; border-width: 1px; box-shadow: none; }
+body.skin .topbar .btn.small { padding: 1px 4px; font-size: 10px; border-width: 1px; }
+body.skin .topbar img, body.skin .topbar canvas, body.skin .topbar .coin { width: 12px !important; height: 12px !important; }
+
+/* Main menu */
+body.skin #scr-menu { padding: 0 !important; display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; overflow-y: auto; }
+body.skin #scr-menu > * { zoom: 1; }
+body.skin .menu-left { padding: 28px 8px 0; flex: 0 0 auto; display: flex; align-items: center; gap: 8px; }
+body.skin .menu-left .logo, body.skin #menu-hw { display: none !important; }
+body.skin .partner-card { margin: 0; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 8px; align-items: center; text-align: left; width: 100%;
+  background: rgba(5,10,25,.55); border: 2px solid var(--edge); border-radius: 10px; padding: 4px 8px; }
+body.skin #menu-partner { grid-row: 1 / span 3; width: 56px !important; height: 44px !important; border-width: 2px; }
+body.skin .partner-card .nm { font-size: 14px; text-shadow: 1px 1px 0 var(--shadow); }
+body.skin .partner-card .lv { font-size: 10px; }
+body.skin .partner-card .lv .type, body.skin .partner-card .lv span { font-size: 9px; padding: 0 5px; }
+body.skin #menu-shiny { grid-column: 2; margin: 2px 0 0; zoom: .8; }
+body.skin .menu-right { width: auto; padding: 6px 8px 8px; gap: 6px; background: none; flex: 1 0 auto; }
+body.skin .menu-right .box { padding: 4px 6px; border-width: 2px; }
+body.skin .menu-right > .box:last-child { display: none; }
+body.skin .menu-list { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 4px; }
+body.skin .menu-item { font-size: 12px; padding: 4px 5px; grid-template-columns: 18px 1fr; column-gap: 5px; border-radius: 6px; min-width: 0; }
+body.skin .menu-item small { display: none; }
+body.skin .menu-item.play { grid-column: 1 / -1; font-size: 16px; padding: 5px 6px; }
+body.skin .menu-item.play small { display: block; font-size: 9px; }
+body.skin .menu-item img, body.skin .menu-item canvas, body.skin .menu-item .ico { width: 18px; height: 18px; }
+body.skin .menu-item::before { display: none; }
+body.skin .menu-item.pad-focus, body.skin .menu-item:hover { background: rgba(255,255,255,.1); }
