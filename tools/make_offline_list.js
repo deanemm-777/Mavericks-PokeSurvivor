@@ -16,4 +16,7 @@ for (const f of ['index.html', 'js/app.min.js', 'css/style.css']) h.update(fs.re
 const version = h.digest('hex').slice(0, 10);
 fs.writeFileSync(path.join(root, 'offline-files.js'),
   'self.OFFLINE = ' + JSON.stringify({ version, files }) + ';\n');
+// Stamp the version into sw.js itself, so its bytes change and phones see the update.
+const swPath = path.join(root, 'sw.js');
+fs.writeFileSync(swPath, fs.readFileSync(swPath, 'utf8').replace(/const BUILD = '[^']*';/, `const BUILD = '${version}';`));
 console.log(`offline-files.js: ${files.length} files, version ${version}`);

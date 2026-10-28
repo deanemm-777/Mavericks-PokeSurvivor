@@ -2,19 +2,22 @@
  * Everything the game needs (code, ~13,500 sprite files, fonts, icons) is
  * listed in offline-files.js. On first launch the page asks this worker to
  * download the whole list into the cache; after that the game runs with no
- * connection at all (airplane mode included). Every request is served from
- * the cache first, and only goes to the network if a file is missing.
+ * connection at all (airplane mode included). The page itself is loaded
+ * network-first (so updates show up as soon as you're online); everything else
+ * comes from the saved copy.
  *
- * To ship a new version of your game, run tools/build_offline.sh: it rebuilds
- * and bumps the version in offline-files.js, so phones pick up the changed
- * files the next time they open it while online.
+ * To ship a new version of your game, run tools/build_offline.sh: it rebuilds,
+ * regenerates offline-files.js and stamps the version into BUILD below.
  */
-importScripts('offline-files.js');            // defines self.OFFLINE = { version, files: [...] }
+// BUILD is rewritten by tools/make_offline_list.js on every build, so this file's
+// bytes change with each version: that is what makes phones notice an update.
+const BUILD = '78a74dc7e1';
+importScripts('offline-files.js?v=' + BUILD);  // defines self.OFFLINE = { version, files: [...] }
 const CACHE = 'ps-offline-' + self.OFFLINE.version;
 const CORE = ['./', './index.html', './manifest.webmanifest'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).catch(() => {}));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE.map(u => new Request(u, { cache: 'reload' })))).catch(() => {}));
   self.skipWaiting();
 });
 
@@ -75,23 +78,42 @@ self.addEventListener('message', e => {
   }
 });
 
-// ---------- serving: cache first, network only for anything missing ----------
+// ---------- serving ----------
+// The page itself: network first (so an update shows up as soon as you're online),
+// the saved copy when offline or the network is slow.
+// Everything else: the saved copy (exact version first), else the network, else
+// any saved version of that file.
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== location.origin) return;
+  if (req.mode === 'navigate') {
+    e.respondWith((async () => {
+      const c = await caches.open(CACHE);
+      try {
+        const res = await Promise.race([
+          fetch(req, { cache: 'no-cache' }),
+          new Promise((_, no) => setTimeout(() => no(new Error('slow')), 3500))
+        ]);
+        if (res.ok) c.put('./index.html', res.clone());
+        return res;
+      } catch (err) {
+        return (await c.match('./index.html')) || (await c.match(req, { ignoreSearch: true })) || Response.error();
+      }
+    })());
+    return;
+  }
   e.respondWith((async () => {
     const c = await caches.open(CACHE);
-    const hit = await c.match(req, { ignoreSearch: true });
-    if (hit) return hit;
+    const exact = await c.match(req);
+    if (exact) return exact;
     try {
       const res = await fetch(req);
       if (res.ok) c.put(req, res.clone());
       return res;
     } catch (err) {
-      if (req.mode === 'navigate') return (await c.match('./index.html')) || Response.error();
-      return Response.error();
+      return (await c.match(req, { ignoreSearch: true })) || Response.error();
     }
   })());
 });

@@ -52,7 +52,19 @@
 
   // Instalable como app (PWA). Sólo con http(s): abierto con doble clic (file://) no hace falta.
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-    addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(e => console.warn('[PWA]', e.message)));
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(e => console.warn('[PWA]', e.message)));
+    // A new version took over: reload once to show it (not in the middle of a run).
+    let hadController = !!navigator.serviceWorker.controller, reloading = false;
+    const reloadSoon = () => {
+      if (reloading) return;
+      if (G.Game && G.Game.state && G.Game.state !== 'ui') { setTimeout(reloadSoon, 3000); return; }
+      reloading = true;
+      location.reload();
+    };
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadController) { hadController = true; return; }     // first install: nothing to refresh
+      reloadSoon();
+    });
     // Standalone build: download the whole game (all 966 Pokémon) once, so it
     // runs with no connection afterwards. Progress shows in a small pill.
     const KEY = 'ps.offline.ready';
@@ -79,8 +91,9 @@
     navigator.serviceWorker.ready.then(reg => {
       const go = () => reg.active && reg.active.postMessage('offline-download');
       go();
-      addEventListener('online', go);
-      document.addEventListener('visibilitychange', () => { if (!document.hidden && navigator.onLine) go(); });
+      addEventListener('online', () => { reg.update().catch(() => {}); go(); });
+      // Coming back to the app (it stays alive in the background on iPhone): look for a new version.
+      document.addEventListener('visibilitychange', () => { if (!document.hidden && navigator.onLine) { reg.update().catch(() => {}); go(); } });
     });
   }
 })();
