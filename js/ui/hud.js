@@ -120,7 +120,7 @@ G.HUD = (() => {
 
     // ---------- reloj / bioma / kills ----------
     // Portrait (narrow screens): the clock row moves below the HP block instead of overlapping it.
-    const oy = w < 560 ? 54 + sa.top : 0;
+    const oy = w < 560 ? 36 + sa.top : 0;
     ctx.textAlign = 'center';
     ctx.font = F(800, 26);
     ctx.fillStyle = 'rgba(255,255,255,.95)';
@@ -486,7 +486,7 @@ G.HUD = (() => {
       const sa = G.Touch.safeArea();
       const pp = G.Touch.spot('pause');
       const bx = pp ? G.U.clamp(pp[0] * w - 20, 4, w - 44) : w - 52 - Math.min(44, sa.right);
-      const by = pp ? G.U.clamp(pp[1] * h - 20, 10, h - 44) : 12 + Math.min(20, sa.top), bs = 40;
+      const by = pp ? G.U.clamp(pp[1] * h - 20, 10 + sa.top, h - 44) : (h > w ? sa.top + 8 : 12 + Math.min(20, sa.top)), bs = 40;   // portrait: below the status bar
       roundRect(ctx, bx, by, bs, bs, 10);
       ctx.fillStyle = 'rgba(10,16,28,.7)'; ctx.fill();
       ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(244,248,255,.8)'; ctx.stroke();

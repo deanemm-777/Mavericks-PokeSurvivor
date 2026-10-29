@@ -76,8 +76,28 @@ G.PadSkin = (() => {
     return { x: (x - l) * k, y: (y - CROP - t) * k, w: (w + l + r) * k, h: (h + t + b) * k };
   }
 
+  /*
+   * iPhone home-screen app with a see-through status bar: the page is told the
+   * screen is shorter than it is (by the status bar's height), which left a
+   * black strip at the bottom. Use the real screen height when that happens.
+   */
+  function appHeight() {
+    const H = innerHeight;
+    const standalone = navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches);
+    if (!standalone || !window.screen || innerWidth > H) return H;
+    const sw = Math.min(screen.width, screen.height), sh = Math.max(screen.width, screen.height);
+    return Math.abs(sw - innerWidth) < 2 && sh > H && sh - H < 80 ? sh : H;
+  }
+  function fixHeight() {
+    const H = appHeight(), fix = H !== innerHeight;
+    document.documentElement.style.setProperty('--app-h', H + 'px');
+    document.body.classList.toggle('vhfix', fix);
+    return H;
+  }
+
   function layout() {
-    const portrait = innerHeight >= innerWidth;
+    const AH = fixHeight();
+    const portrait = AH >= innerWidth;
     const want = portrait && (G.Touch.active || innerWidth < 700) && G.Settings.get('theme') !== 'full';   // Theme in the main menu
     // Full-screen theme in portrait gets its own compact menu layout (css: body.fullp).
     document.body.classList.toggle('fullp', portrait && !want && (G.Touch.active || innerWidth < 700));
@@ -87,7 +107,7 @@ G.PadSkin = (() => {
       if (!active) release();
     }
     if (!root) return;
-    const W = innerWidth, H = innerHeight;
+    const W = innerWidth, H = AH;
     // Full width, unless that leaves the screen under ~42% of the height (short
     // phones, or inside the Claude app): then the whole device shrinks a little
     // and sits centered with black at the sides, as Delta does.
@@ -201,6 +221,7 @@ G.PadSkin = (() => {
     get active() { return active; },
     state() { return state; },
     /** Is this element part of the controller? (taps on it must not hide the gold selection box) */
+    appHeight,
     owns(el) { return !!(root && el && root.contains(el)); }
   };
 })();
