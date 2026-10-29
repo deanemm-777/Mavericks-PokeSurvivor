@@ -64,7 +64,8 @@ G.MenuUI = (() => {
     $('menu-partner').style.setProperty('--stage-c', shiny ? '#9ae6ff' : G.U.TYPE_COLOR[mon.types[0]]);
     $('menu-partner').classList.toggle('shiny', shiny);
     $('menu-partner-name').innerHTML = mon.name + (shiny ? ' ' + G.Icons.html('shiny', 24) : '');
-    $('menu-partner-info').innerHTML = G.UI.typeChips(mon.types) + ' ' + G.UI.stars(mon.rarity);
+    $('menu-partner-info').innerHTML = G.UI.typeChips(mon.types) + ' ' + G.UI.stars(mon.rarity) +
+      (G.Upgrades.starsOf(mon.dex) ? ` <span class="pstars" translate="no">${'★'.repeat(G.Upgrades.starsOf(mon.dex))}</span>` : '');
     // Normal / shiny a mano, aquí mismo (en el móvil no se encontraba en la ficha).
     const seg = $('menu-shiny');
     seg.classList.toggle('hidden', !G.DB.ownsShiny(mon.dex));
@@ -140,6 +141,9 @@ G.MenuUI = (() => {
     const room = G.Social.room;
     const play = document.querySelector('#scr-menu [data-go=play] small');
     if (play) play.textContent = room ? 'Volver a tu sala (' + room.members.length + '/' + G.Social.MAX_PLAYERS + ')' : 'Entra en la mazmorra';
+    // Standalone: a saved run waits (systems/checkpoint.js).
+    if (play && !room && G.Checkpoint.saved) { play.textContent = 'Continue: ' + G.Checkpoint.describe(); play.setAttribute('translate', 'no'); }
+    else if (play) play.removeAttribute('translate');
     const fr = G.Social.friends;
     const req = fr.filter(f => f.status === 'in').length;
     const parts = [];
@@ -538,7 +542,7 @@ G.MenuUI = (() => {
     const lv = d => Object.values(s.pupg[d] || {}).reduce((a, b) => a + b, 0);
     const mons = Object.keys(s.owned).map(Number).filter(d => G.DEX_BY[d])
       .sort((a, b) => (b === s.partner) - (a === s.partner) || lv(b) - lv(a) || a - b);
-    sel.innerHTML = mons.map(d => `<option value="${d}">${G.DEX_BY[d].name}${d === s.partner ? ' (compañero)' : ''}${lv(d) ? ' · ' + lv(d) + ' niveles' : ''}</option>`).join('');
+    sel.innerHTML = mons.map(d => `<option value="${d}">${G.DEX_BY[d].name}${G.Upgrades.starsOf(d) ? ' ' + '★'.repeat(G.Upgrades.starsOf(d)) : ''}${d === s.partner ? ' (compañero)' : ''}${lv(d) ? ' · ' + lv(d) + ' niveles' : ''}</option>`).join('');
     sel.value = upgDex;
     sel.onchange = () => { upgDex = +sel.value; G.Audio.sfx('select'); renderUpgrades(); };
     renderUpgrades();
@@ -553,6 +557,7 @@ G.MenuUI = (() => {
     $('upg-stage').style.setProperty('--stage-c', shiny ? '#9ae6ff' : G.U.TYPE_COLOR[mon.types[0]]);
     const box = $('upg-list');
     box.innerHTML = '';
+    box.appendChild(prestigePanel(levels, mon));
     for (const u of G.Upgrades.LIST) {
       const lvl = levels[u.id] || 0;
       const maxed = lvl >= u.max;
@@ -598,6 +603,36 @@ G.MenuUI = (() => {
       if (u.id === 'start2' && lvl > 0 && start2Open) box.appendChild(start2Picker());
     }
     box.appendChild(bindPanel());
+  }
+
+  // ---------------- standalone: prestige (data/upgrades.js) ----------------
+  let prestigeArm = 0;
+  function prestigePanel(levels, mon) {
+    const U = G.Upgrades, stars = U.starsOf(upgDex), maxed = U.allMaxed(levels), full = stars >= U.MAX_STARS;
+    const el = document.createElement('div');
+    el.className = 'panel prestige';
+    el.setAttribute('translate', 'no');
+    const starRow = Array.from({ length: U.MAX_STARS }, (_, i) => `<span class="pstar${i < stars ? ' on' : ''}">★</span>`).join('');
+    const bonus = stars ? `+${Math.round(stars * U.STAR.atk * 100)} % damage · +${Math.round(stars * U.STAR.hp * 100)} % health · +${Math.round(stars * U.STAR.xp * 100)} % XP · +${Math.round(stars * U.STAR.coins * 100)} % coins`
+                        : 'Max every upgrade to prestige for a star.';
+    const armed = prestigeArm > performance.now();
+    el.innerHTML = `
+      <div class="grow"><b>Prestige</b> <span class="pstars">${starRow}</span>
+        <div class="note" style="margin:2px 0 0">${full ? 'Every star earned. ' : ''}${bonus}</div>
+        ${maxed && !full ? `<div class="note" style="margin:2px 0 0">Prestiging resets these upgrades to 0 (Repertoire and starting moves stay) and gives a permanent star.</div>` : ''}
+      </div>
+      ${maxed && !full ? `<button class="btn small gold" data-prestige>${armed ? 'Tap again to confirm' : 'Prestige ★' + (stars + 1)}</button>` : ''}`;
+    const b = el.querySelector('[data-prestige]');
+    if (b) b.onclick = () => {
+      if (prestigeArm < performance.now()) { prestigeArm = performance.now() + 4000; renderUpgrades(); setTimeout(() => { if (G.UI.isOpen('scr-upgrades')) renderUpgrades(); }, 4100); return; }
+      prestigeArm = 0;
+      if (U.prestige(upgDex)) {
+        G.Audio.sfx('legend');
+        G.UI.toast(`${mon.name} earned prestige star ${U.starsOf(upgDex)}!`, 3000);
+      }
+      renderUpgrades();
+    };
+    return el;
   }
 
   // ---------------- atajos: hueco fijo para cada movimiento ----------------

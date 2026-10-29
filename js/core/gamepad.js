@@ -289,8 +289,19 @@ G.Pad = (() => {
       vec = [x, y];
       const ax = p.axes[2] || 0, ay = p.axes[3] || 0;
       if (Math.hypot(ax, ay) > 0.35) { aimVec = [ax, ay]; aimAt = performance.now(); } else aimVec = [0, 0];
-      if (hit(BT.LB) || hit(BT.LT)) G.Input.virtual('keyq');
-      if (hit(BT.RB) || hit(BT.RT)) G.Input.virtual('keye');
+      // Standalone: L and R together Mega Evolve (systems/mega.js). Pressing both also
+      // cycles back and forth, so the active move stays the same.
+      const lb = now[BT.LB] || now[BT.LT], rb = now[BT.RB] || now[BT.RT];
+      const hl = hit(BT.LB) || hit(BT.LT), hr = hit(BT.RB) || hit(BT.RT);
+      if (lb && rb && (hl || hr)) {
+        G.Input.virtual('padmega');
+        // The first of the two already switched move: switch it back.
+        if (hl && !hr) G.Input.virtual('keyq'); else if (hr && !hl) G.Input.virtual('keye');
+      }
+      else {
+        if (hit(BT.LB) || hit(BT.LT)) G.Input.virtual('keyq');
+        if (hit(BT.RB) || hit(BT.RT)) G.Input.virtual('keye');
+      }
       if (hit(BT.START) || hit(BT.BACK)) G.Input.virtual('escape');
       if (hit(BT.A)) G.Input.virtual('space');
       if (hit(BT.X)) G.Input.virtual('padx');

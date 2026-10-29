@@ -67,6 +67,58 @@ G.HUD = (() => {
     }
   }
 
+  /** Standalone build: Endless round counter, Mega Evolution and Z-move buttons (systems/modes.js, mega.js). */
+  function drawExtras(ctx, w, h, pl, oy, sa, touch) {
+    if (G.Modes.endless) {
+      const q = G.Modes.quota(G.Modes.round), k = G.Modes.roundKills;
+      ctx.textAlign = 'center';
+      ctx.font = F(800, 11);
+      ctx.fillStyle = G.Modes.clearT > 0 ? '#ffd23f' : '#eaf2ff';
+      G.I18n.rawCanvas(ctx, 'fillText', 'ROUND ' + G.Modes.round + '  ·  ' + Math.min(k, q) + ' / ' + q, w / 2, 74 + oy);
+      bar(ctx, w / 2 - 60, 79 + oy, 120, 5, Math.min(1, k / q), '#ffd23f');
+    }
+    // Z-move name across the screen when it is unleashed.
+    const z = G.Mega.zFx;
+    if (z) {
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, z.t * 1.5);
+      ctx.textAlign = 'center';
+      ctx.font = F(800, Math.min(30, w / 13));
+      ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,.75)';
+      G.I18n.rawCanvas(ctx, 'strokeText', z.name.toUpperCase(), w / 2, h * 0.38);
+      ctx.fillStyle = z.col;
+      G.I18n.rawCanvas(ctx, 'fillText', z.name.toUpperCase(), w / 2, h * 0.38);
+      ctx.restore();
+    }
+    if (pl.dead) return;
+    // Buttons: bottom right, above the move bar.
+    const R = 22, gap = 10;
+    const by = h - 54 - 18 - (touch ? Math.min(28, sa.bottom) : 0) - R - 26;
+    let bx = w - R - 14 - sa.right;
+    const pulse = 0.75 + Math.sin(performance.now() / 160) * 0.25;
+    const btn = (label, frac, ready, col, onTap, active = 0) => {
+      ctx.save();
+      ctx.beginPath(); ctx.arc(bx, by, R, 0, 6.2832);
+      ctx.fillStyle = ready ? 'rgba(20,30,50,.92)' : 'rgba(10,16,28,.72)'; ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.15)'; ctx.stroke();
+      ctx.beginPath(); ctx.arc(bx, by, R, -Math.PI / 2, -Math.PI / 2 + 6.2832 * Math.min(1, active || frac));
+      ctx.strokeStyle = col; ctx.globalAlpha = ready ? pulse : 0.85; ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.textAlign = 'center';
+      ctx.font = F(800, label.length > 1 ? 10 : 15);
+      ctx.fillStyle = ready || active ? col : 'rgba(200,215,240,.6)';
+      G.I18n.rawCanvas(ctx, 'fillText', label, bx, by + (label.length > 1 ? 4 : 5));
+      ctx.restore();
+      if (touch && ready) G.Touch.addButton(bx - R, by - R, R * 2, R * 2, onTap, 6);
+      bx -= R * 2 + gap;
+    };
+    btn('Z', G.Mega.zCharge, G.Mega.zReady, '#ffd23f', () => G.Mega.zMove());
+    if (G.Mega.can) {
+      const act = G.Mega.active ? G.Mega.megaT / G.Mega.MEGA_TIME : 0;
+      btn('MEGA', G.Mega.megaCharge, G.Mega.megaReady, '#ff9df5', () => G.Mega.megaEvolve(), act);
+    }
+  }
+
   function draw(ctx, w, h, pl, st) {
     ctx.save();
     ctx.textBaseline = 'alphabetic';
@@ -485,6 +537,9 @@ G.HUD = (() => {
         ctx.fillText(Math.ceil(ob[id]) + 's', bx + 12, by + 35);
       });
     }
+
+    // ---------- standalone: Endless round, Mega and Z buttons ----------
+    drawExtras(ctx, w, h, pl, oy, sa, touch);
 
     // ---------- botón de pausa (táctil) ----------
     if (touch) {

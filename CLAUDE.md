@@ -16,3 +16,7 @@ Personal, non-commercial build: no accounts, no cloud, no co-op, no ranking.
 - Halloween event uses the phone clock when offline.
 - `js/ui/pad-skin.js` + `assets/skin/`: on-screen controller from the WaveBlue Delta skin, fed into `js/core/gamepad.js` as a virtual pad. Portrait only (landscape shows a "turn your phone upright" notice).
 - Theme item in the main menu (`theme` setting: 'gameboy' | 'full'): WaveBlue skin, or full screen with the touch joystick (`body.fullp` styles in portrait).
+- Game modes (`js/systems/modes.js`, picker `js/ui/modes-ui.js`): Classic, Fast (difficulty clock x2, x1.5 coins), Endless (no Judgment, rounds; rift every 5, boss every 25). Systems get the difficulty time `G.Game.st.ft`.
+- Mega Evolution and Z-moves (`js/systems/mega.js`): forms from SpriteCollab via `tools/fetch_megas.py` → `js/data/megas.js`, sprites under `assets/pokemon/{20000+dex}/`. L+R / M = Mega, SELECT / Z / Space = Z-move.
+- Save & resume (`js/systems/checkpoint.js`): checkpoint in `save.suspended` every 20 s, on pause, on backgrounding and with Save & quit.
+- Prestige (`js/data/upgrades.js`): stars in `save.pstar[dex]`, panel at the top of each Pokémon's Upgrades.

@@ -29,7 +29,7 @@ G.Player = class Player {
     this.xpMul = perks.xpMul || 1;
     this.coinMul = perks.coinMul || 1;
 
-    this.maxHp = mon.hp + (perks.hp || 0);
+    this.maxHp = Math.round((mon.hp + (perks.hp || 0)) * (perks.hpMul || 1));    // (hpMul: standalone prestige stars)
     this.hp = this.maxHp;
     this.baseSpd = mon.spd;
     this.baseAtk = mon.atk;
@@ -564,6 +564,7 @@ G.Player = class Player {
       ctx.restore();
     }
     G.Sprites.drawShadow(ctx, this.dex, this.x, this.y, this.scale);
+    if (G.Mega && this.mega) G.Mega.drawAura(ctx, this);     // standalone: Mega Evolution
     // Poder de altar: aro de su color latiendo bajo los pies.
     if (this.power && !this.dead) {
       ctx.save();

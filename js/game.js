@@ -22,7 +22,8 @@ G.Game = (() => {
   let caught = [];          // shinies conseguidos en esta run
   let biome = -1;
 
-  const st = { get time() { return time; } };
+  const st = { get time() { return time; }, get ft() { return G.Modes ? G.Modes.ft(time) : time; } };
+  let runSeed = 1, cpT = 20;     // standalone: map seed and next checkpoint (systems/checkpoint.js)
 
   // ---------------- arranque ----------------
 
@@ -92,7 +93,7 @@ G.Game = (() => {
    * cierra la ventana de encima). En el menú principal no hay entrada de más:
    * «atrás» sale de la web, como siempre.
    */
-  const BACK_SCREENS = ['scr-dex', 'scr-upgrades', 'scr-shop', 'scr-bag', 'scr-gacha', 'scr-friends', 'scr-rank', 'scr-goals', 'scr-lobby', 'scr-mod'];
+  const BACK_SCREENS = ['scr-modes', 'scr-dex', 'scr-upgrades', 'scr-shop', 'scr-bag', 'scr-gacha', 'scr-friends', 'scr-rank', 'scr-goals', 'scr-lobby', 'scr-mod'];
   const shown = id => { const el = document.getElementById(id); return !!el && !el.classList.contains('hidden'); };
   let trapped = false;
   function needsTrap() {
@@ -133,6 +134,7 @@ G.Game = (() => {
   function autoPause() {
     G.Touch.reset();
     if (state === 'playing' && !G.Coop.active) { state = 'paused'; G.RunUI.showPause(); }
+    saveCheckpoint();
   }
 
   // Grupo: quién está eligiendo fusión u objeto (todo parado), y el anfitrión
@@ -150,21 +152,24 @@ G.Game = (() => {
       else { G.RunUI.showPause(true); G.Audio.sfx('pause'); }
       return;
     }
-    if (state === 'playing') { state = 'paused'; G.RunUI.showPause(); G.Audio.sfx('pause'); }
+    if (state === 'playing') { state = 'paused'; G.RunUI.showPause(); G.Audio.sfx('pause'); saveCheckpoint(); }
     else if (state === 'paused') { state = 'playing'; G.UI.hideAll(); }
   }
 
   // ---------------- run ----------------
 
-  /** @param coop  { seed, host, members } para una partida en grupo */
-  function startRun(coop = null) {
+  /** @param coop  { seed, host, members } para una partida en grupo
+   *  @param opt   standalone: { mode: 'normal'|'fast'|'endless', restore: checkpoint } */
+  function startRun(coop = null, opt = {}) {
+    const snap = opt.restore || null;
     holdBy = []; awayBy = null;
     // Halloween (systems/halloween.js): lo que sea al empezar vale toda la partida (en grupo, lo dice el anfitrión).
     G.Halloween.runStart(coop ? coop.hw : undefined);
     const save = G.DB.save;
+    if (snap && G.DEX_BY[snap.dex]) save.partner = snap.dex;
     // Con su naturaleza aplicada (una copia: ver systems/mons.js).
     const mon = G.Mons.monFor(save.partner);
-    const perks = G.Upgrades.perks(G.DB.upgradesOf(mon.dex));
+    const perks = G.Upgrades.perks(G.DB.upgradesOf(mon.dex), G.Upgrades.starsOf(mon.dex));
 
     G.UI.hideAll();
     G.UI.chrome(false);
@@ -180,13 +185,15 @@ G.Game = (() => {
     G.Weather.reset();
     G.Path.clear();
     G.Hazards.clear();
-    G.World.reset(coop ? coop.seed : Math.floor(Math.random() * 1e6));
+    runSeed = coop ? coop.seed : snap && snap.seed ? snap.seed : Math.floor(Math.random() * 1e6);
+    G.World.reset(runSeed);
+    G.Modes.start(snap ? snap.mode : opt.mode || 'normal', snap ? snap.ms : null);
     G.World.setBiome(G.Tiles.runBiome(0), true);
     biome = 0;
     time = 0; pendingLevels = 0;
     runReal = performance.now(); tampered = false;
 
-    pl = new G.Player(mon, perks, !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
+    pl = new G.Player(mon, perks, snap ? !!snap.shiny : !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
     G.Orbs.reset();
     pl.setAbility(G.Mons.abilityOf(mon.dex).id);
     pl.anim.skin = G.Skins.worn(save, mon.dex) || null;      // su disfraz (core/skins.js)
@@ -213,6 +220,19 @@ G.Game = (() => {
       G.Coop.begin(coop, pl, coopApi);
       G.Social.setPlaying(true);
     }
+    // Standalone: continue a saved run (systems/checkpoint.js).
+    if (snap) {
+      G.Checkpoint.apply(pl, snap);
+      time = snap.time || 0;
+      biome = Math.floor(G.Modes.ft(time) / 240);
+      G.World.setBiome(G.Tiles.runBiome(biome), true);
+      banked = { t1: pl.t1, t10: pl.t10, cn: pl.candy || 0 };
+      G.Spawner.fastForward(G.Modes.ft(time));
+      G.Modes.syncKills(pl.kills);
+      runReal = performance.now() - time * 1000;
+    }
+    G.Mega.reset(pl, snap ? snap.mega : null);
+    cpT = 20;
     G.Camera.x = pl.x; G.Camera.y = pl.y; G.Camera.shake = 0;
     // Hojas de sprites locales: el compañero y los primeros enemigos.
     G.Sprites.preload([mon.dex], 8000, pl.shiny, pl.anim.skin || '');
@@ -223,7 +243,33 @@ G.Game = (() => {
     deathT = 0;
 
     state = 'playing';
+    if (snap) G.Spawner.say('Run continued: ' + G.U.mmss(time) + (G.Modes.endless ? ' · Round ' + G.Modes.round : ''), 3, true);
+    else if (G.Modes.id !== 'normal') G.Spawner.say(G.Modes.name + ' mode', 2.4, true);
   }
+
+  /** Standalone: write a checkpoint of the run in progress (not in a rift arena, the Judgment or co-op). */
+  function saveCheckpoint() {
+    if (!pl || pl.dead || G.Coop.active || state === 'over' || state === 'ui' || G.Rift.inArena || G.Judgment.active) return false;
+    G.Checkpoint.store(G.Checkpoint.snapshot({ pl, time, seed: runSeed }));
+    return true;
+  }
+
+  /** Standalone: keep the run for later and go back to the menu. */
+  function saveAndQuit() {
+    if (!saveCheckpoint()) { G.UI.toast("This moment can't be saved (rift or Judgment): try again after it", 3500); return; }
+    bankTickets(false);
+    G.Orbs.reset();
+    G.Halloween.runEnd();
+    G.Audio.music(null);
+    G.Audio.sfx('back');
+    pl = null;
+    G.UI.hideAll();
+    G.Flow.goMenu();
+    G.UI.toast('Run saved: continue it from the menu', 3000);
+  }
+
+  /** Standalone: a bonus level-up pick (Endless round cleared). */
+  function bonusLevel() { pendingLevels++; }
 
   function quitRun() {
     if (G.Coop.active) G.Coop.leave();
@@ -410,8 +456,14 @@ G.Game = (() => {
       jefes: pl.bosses * 80,
       recogidas: pl.coins
     };
-    const coins = Math.round((parts.tiempo + parts.derrotados + parts.jefes + parts.recogidas) * mul);
-    const record = time > save.stats.bestTime;
+    const coins = Math.round((parts.tiempo + parts.derrotados + parts.jefes + parts.recogidas) * mul * G.Modes.coinMul);
+    // Standalone: each mode keeps its own records (save.stats.modes).
+    save.stats.modes = save.stats.modes || {};
+    const mrec = save.stats.modes[G.Modes.id] = save.stats.modes[G.Modes.id] || { best: 0, round: 0, runs: 0 };
+    const record = time > (G.Modes.id === 'normal' ? save.stats.bestTime : mrec.best);
+    mrec.best = Math.max(mrec.best || 0, Math.floor(time)); mrec.runs = (mrec.runs || 0) + 1;
+    if (G.Modes.endless) mrec.round = Math.max(mrec.round || 0, G.Modes.round);
+    G.Checkpoint.clear();
 
     save.coins += coins;
     bankTickets(false);
@@ -420,7 +472,7 @@ G.Game = (() => {
     save.pused = save.pused || {};
     save.pused[pl.dex] = (+save.pused[pl.dex] || 0) + 1;     // para "más usados" en la colección
     save.stats.totalKills += pl.kills;
-    save.stats.bestTime = Math.max(save.stats.bestTime, Math.floor(time));
+    if (G.Modes.id === 'normal') save.stats.bestTime = Math.max(save.stats.bestTime, Math.floor(time));
     if (coop) save.stats.bestGroupTime = Math.max(save.stats.bestGroupTime || 0, Math.floor(time));
     save.stats.bestLevel = Math.max(save.stats.bestLevel, pl.level);
     save.stats.coinsEarned += coins;
@@ -447,7 +499,8 @@ G.Game = (() => {
         .sort((a, b) => b.me - a.me),
       moves: pl.moves, caught,
       breakdown: Object.entries(parts).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(' · ') +
-                 (mul > 1 ? ` · ×${mul.toFixed(2)} Fortuna` : '')
+                 (mul > 1 ? ` · ×${mul.toFixed(2)} Fortuna` : '') + (G.Modes.coinMul > 1 ? ` · ×${G.Modes.coinMul} ${G.Modes.name}` : '') +
+                 (G.Modes.endless ? ` · Round ${G.Modes.round}` : '')
     }, () => { pl = null; G.Flow.afterRun(); });
   }
 
@@ -672,7 +725,7 @@ G.Game = (() => {
     }
     if (state === 'ui') {
       // Esc en una subpantalla del menú vuelve al menú.
-      if (G.Input.tap('escape') && !G.UI.isOpen('scr-profile') && ['scr-dex', 'scr-upgrades', 'scr-shop', 'scr-bag', 'scr-gacha', 'scr-friends', 'scr-rank', 'scr-goals'].some(G.UI.isOpen)
+      if (G.Input.tap('escape') && !G.UI.isOpen('scr-profile') && ['scr-modes', 'scr-dex', 'scr-upgrades', 'scr-shop', 'scr-bag', 'scr-gacha', 'scr-friends', 'scr-rank', 'scr-goals'].some(G.UI.isOpen)
           && document.getElementById('pull-fx').classList.contains('hidden')) G.MenuUI.open();
       return;
     }
@@ -691,6 +744,9 @@ G.Game = (() => {
     }
     if (G.Input.tap('padx')) G.Orbs.useSelected(pl);
     if (G.Input.tap('pady')) G.Orbs.next(pl);
+    // Standalone: Mega Evolution (M, or L+R) and Z-moves (Z, Space, or SELECT).
+    if (G.Input.tap('keym') || G.Input.tap('padmega')) G.Mega.megaEvolve();
+    if (G.Input.tap('keyz') || G.Input.tap('space')) G.Mega.zMove();
   }
 
   // ---------------- bucle ----------------
@@ -788,8 +844,9 @@ G.Game = (() => {
       return;
     }
     time += dt;
+    const ft = G.Modes.ft(time);      // standalone: difficulty time (Fast mode runs it at double speed)
 
-    const b = Math.floor(time / 240);
+    const b = Math.floor(ft / 240);
     if (b !== biome && !G.Rift.inArena && !G.Judgment.active) {
       biome = b;
       G.World.setBiome(G.Tiles.runBiome(b));
@@ -810,7 +867,7 @@ G.Game = (() => {
     G.World.update(dt, G.Camera);
 
     const all = everyone();
-    if (!coop || G.Coop.isHost) { G.Path.update(dt, all); G.Spawner.update(dt, all, time); }
+    if (!coop || G.Coop.isHost) { G.Path.update(dt, all); G.Spawner.update(dt, all, ft); }
     else G.Spawner.tickBanner(dt);
     G.EnemyMgr.update(dt, all);
     G.EnemyMgr.rebuildGrid();
@@ -821,10 +878,13 @@ G.Game = (() => {
     G.Pickups.update(dt, all, onCollect);
     G.Hazards.update(dt);
     G.Interact.update(dt, pl);
-    G.Rift.update(dt, pl, time);
-    G.Judgment.update(dt, pl, time);
-    G.Events.update(dt, all, time);
-    G.Weather.update(dt, time, pl);
+    G.Rift.update(dt, pl, ft);
+    if (!G.Modes.endless) G.Judgment.update(dt, pl, ft);
+    G.Events.update(dt, all, ft);
+    G.Weather.update(dt, ft, pl);
+    G.Modes.tick(dt, pl);
+    G.Mega.update(dt);
+    if (!coop && (cpT -= dt) <= 0) { cpT = 20; saveCheckpoint(); }
     G.FX.update(dt);
 
     G.Audio.music(G.Judgment.active ? G.Judgment.music : G.Rift.inArena ? 'rift' : G.EnemyMgr.bossAlive() ? 'boss' : G.BIOME_MUSIC[biome % G.BIOME_MUSIC.length]);
@@ -1052,7 +1112,7 @@ G.Game = (() => {
   })();
 
   return {
-    init, startRun, everyone, levelXp, flash, offerBond,
+    init, startRun, everyone, levelXp, flash, offerBond, saveCheckpoint, saveAndQuit, bonusLevel,
     /** Para pruebas: salta el reloj de la run. */
     debugTime(t) { tampered = true; time = t; },
     /** Halloween: caramelos de golpe (al llegar al gran Gengar; en grupo, los da el anfitrión a todos). */
@@ -1136,7 +1196,7 @@ G.Flow = {
       G.LobbyUI.open();
     } else this.goMenu();
   },
-  play() { G.Game.startRun(); },
+  play() { G.ModesUI.open(); },
   /** Empieza la partida en grupo (el anfitrión la manda a todos). */
   startCoop(cfg) {
     if (G.Game.state !== 'ui' || !G.Social.room) return;

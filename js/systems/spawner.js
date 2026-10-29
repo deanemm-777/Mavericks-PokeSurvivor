@@ -208,6 +208,30 @@ G.Spawner = (() => {
   /** Invitado en cooperativo: sólo corre el reloj del aviso. */
   function tickBanner(dt) { if (announceT > 0) announceT -= dt; }
 
-  return { reset, update, ahead, burst, outR, tickBanner, banner, say, rate, SHINY_RATE, CAP,
+  /** Continuing a saved run: bosses whose minute has passed don't all appear at once. */
+  function fastForward(t) {
+    bossIdx = 0;
+    while (G.Enemies.BOSSES[bossIdx] && G.Enemies.BOSSES[bossIdx].at <= t) bossIdx++;
+    surgeT = 20;
+  }
+
+  /** Endless mode: a boss battle now, k times tougher than the strongest scheduled boss. */
+  function spawnBossNow(k = 1) {
+    const list = G.Enemies.BOSSES;
+    if (!list.length) return null;
+    const b = list[Math.floor(Math.random() * list.length)];
+    const t = Math.max(G.Game.st.time, list[list.length - 1].at);
+    const pl = anchor() || G.Game.player;
+    const [x, y] = ringPoint(pl, Math.random() * 6.2832);
+    const sc = G.Enemies.bossScale(t);
+    const e = new G.Enemy(b, x, y, Object.assign({}, sc, { hp: sc.hp * k, dmg: (sc.dmg || 1) * Math.sqrt(k) }), true);
+    if (rollShiny(b.dex)) e.makeShiny();
+    G.EnemyMgr.add(e);
+    G.Camera.kick(1.2);
+    G.Audio.sfx('boss');
+    return e;
+  }
+
+  return { reset, update, ahead, burst, outR, tickBanner, banner, say, rate, SHINY_RATE, CAP, fastForward, spawnBossNow,
            debugForceShiny(n = 1) { forceShiny = n; } };
 })();

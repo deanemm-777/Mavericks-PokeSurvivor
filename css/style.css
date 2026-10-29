@@ -1246,3 +1246,20 @@ body.fullp .scr .box { padding: 12px; }
 body.fullp .topbar { top: calc(4px + env(safe-area-inset-top)) !important; }
 #build-tag { position: absolute; right: calc(8px + env(safe-area-inset-right)); bottom: calc(2px + env(safe-area-inset-bottom)); font-size: 9px; color: rgba(200,215,240,.45); pointer-events: none; z-index: 1; }
 body.skin #build-tag { bottom: 1px; right: 6px; font-size: 8px; }
+
+/* ============ Standalone: Play modes, prestige ============ */
+.modes-box { width: min(520px, 100%); }
+.modes-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.mode-item { width: 100%; }
+.mode-item small { white-space: normal !important; }
+.mode-item .mode-rec { color: var(--gold); }
+.mode-item.last { background: rgba(255,255,255,.06); }
+.modes-saved { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+.modes-saved-t { color: var(--gold); font-weight: 800; }
+.modes-saved-d { font-size: 15px; }
+body.skin .menu-item.mode-item small, body.fullp .menu-item.mode-item small { display: block !important; font-size: 10px; }
+.prestige { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.pstars { letter-spacing: 1px; }
+.pstar { color: rgba(255,255,255,.18); }
+.pstar.on, .pstars { color: var(--gold); text-shadow: 0 0 6px rgba(255,210,63,.5); }
+body.skin .toast { z-index: 70; bottom: auto !important; top: calc(var(--sy) + var(--sh) - 64px) !important; max-width: calc(var(--sw) - 16px); }

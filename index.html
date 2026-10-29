@@ -78,7 +78,7 @@
   ]
 }
 </script>
-<link rel="stylesheet" href="css/style.css?v=c5432ff34b">
+<link rel="stylesheet" href="css/style.css?v=291e78313e">
 <script src="js/core/locales.js?v=fd491484e3"></script>
 <script src="js/noframe.js"></script>
 </head>
@@ -166,7 +166,7 @@
 
 <!-- ====== Menú principal ====== -->
 <section id="scr-menu" class="scr hidden">
-  <div id="build-tag" translate="no">build fe1455</div>
+  <div id="build-tag" translate="no">build a27f9a</div>
   <div class="menu-left">
     <div class="logo">
       <div class="t1">PokéSurvivor<span class="splash offline-hide">Folagor, Sekiam, PokeAlex: ¿un hueco?</span></div>
@@ -582,16 +582,35 @@
   </div>
 </section>
 
+<!-- ====== Standalone: choose a mode / continue a saved run (js/ui/modes-ui.js) ====== -->
+<section id="scr-modes" class="scr dim hidden" translate="no">
+  <div class="box modes-box">
+    <div class="row between"><h2>Play</h2><button class="btn small ghost" data-back>Back</button></div>
+    <div id="modes-saved" class="modes-saved hidden">
+      <div class="modes-saved-t">Saved run</div>
+      <div id="modes-saved-desc" class="modes-saved-d"></div>
+      <div class="row">
+        <button id="modes-continue" class="btn gold grow">Continue</button>
+        <button id="modes-end" class="btn grow">End &amp; collect</button>
+      </div>
+      <p class="note">Finish or end your saved run to start a new one.</p>
+    </div>
+    <div id="modes-list" class="modes-list"></div>
+  </div>
+</section>
+
 <section id="scr-pause" class="scr dim hidden">
   <div class="box center pause-box">
     <h2>Pausa</h2>
     <p class="sub kbd-hint"><kbd>WASD</kbd> moverse · <kbd>1</kbd>–<kbd>4</kbd> movimiento · <kbd>Q</kbd>/<kbd>E</kbd> ciclar · <kbd>5</kbd>–<kbd>8</kbd> esferas · <kbd>Esc</kbd> pausa</p>
     <p class="sub touch-hint">Arrastra el dedo para moverte · toca un ataque para cambiarlo · toca una esfera para usarla</p>
-    <p class="sub skin-hint" translate="no">D-pad move · L / R switch move · A use orb · B switch orb · START resume</p>
+    <p class="sub skin-hint" translate="no">D-pad move · L / R switch move · A use orb · B switch orb · SELECT Z-move · L+R Mega Evolve · START resume</p>
+    <p class="sub kbd-hint" translate="no"><kbd>Z</kbd> Z-move · <kbd>M</kbd> Mega Evolve</p>
     <p id="pause-coop" class="note hidden">Partida en grupo: el juego sigue mientras estás aquí.</p>
     <div class="row" style="justify-content:center">
       <button id="btn-resume" class="btn gold">Continuar</button>
       <button id="btn-pause-settings" class="btn">Ajustes</button>
+      <button id="btn-save-quit" class="btn" translate="no">Save &amp; quit</button>
       <button id="btn-quit" class="btn">Abandonar run</button>
     </div>
     <div id="pause-sum" class="pause-sum"></div>
@@ -608,6 +627,6 @@
 </section>
 
 <!-- datos generados -->
-<script defer src="js/app.min.js?v=0bd8c0d78c"></script>
+<script defer src="js/app.min.js?v=5e4b4782c8"></script>
 </body>
 </html>

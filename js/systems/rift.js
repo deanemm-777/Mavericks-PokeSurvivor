@@ -28,6 +28,7 @@ G.Rift = (() => {
   let arena = null;         // { tx, ty, r, dex, shiny, x, y, back, biome, t, phase, endT, bossId }
   let zone = null;          // dónde estaba la última arena { x, y, r } (ver leftBehind)
   let checkT = CHECK, asked = false, downT = 0, misses = 0;
+  let auto = true;          // standalone build: Endless mode opens rifts itself (systems/modes.js)
   const authority = () => !G.Coop.active || G.Coop.isHost;
   const TS = () => G.Tiles.T * G.Sprites.PX;
 
@@ -51,7 +52,7 @@ G.Rift = (() => {
       rift.ttl -= dt;
       if (rift.ttl <= 0) { rift = null; return; }
       if (!arena && !pl.dead && G.U.dist2(pl.x, pl.y, rift.x, rift.y - 10) < 30 * 30) enter();
-    } else if (!arena && authority() && time > FROM && time < G.Judgment.AT - 120) {
+    } else if (!arena && auto && authority() && time > FROM && time < G.Judgment.AT - 120) {
       checkT -= dt;
       if (checkT <= 0) {
         checkT = CHECK;
@@ -149,7 +150,7 @@ G.Rift = (() => {
 
   function spawnLegend() {
     const mon = G.DEX_BY[arena.dex];
-    const t = G.Game.st.time;
+    const t = G.Game.st.ft;   // (standalone: difficulty time, see modes.js)
     const n = G.Game.everyone().length;
     const ts = TS();
     const def = {
@@ -285,7 +286,8 @@ G.Rift = (() => {
     get rift() { return rift; }, get arena() { return arena; },
     get inArena() { return !!arena; },
     get timeLeft() { return arena ? Math.max(0, ARENA_TIME - arena.t) : 0; },
-    debugOpen() { open(); },
+    debugOpen() { if (!arena && !rift) open(); },
+    setAuto(v) { auto = !!v; },
     /** Para pruebas: arena de un tipo ya. */
     debugArena(type) { start(type); },
     /** Para vídeos: la próxima grieta en la que entres será de este tipo. */

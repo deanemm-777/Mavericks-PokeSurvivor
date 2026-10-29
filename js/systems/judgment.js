@@ -218,7 +218,7 @@ G.Judgment = (() => {
     arenaT = 0; bossT = 1.2; bossN = 0; downs = 0;
     G.Progress.event('judge');
     // Vida del primer legendario: unos 3 s de vuestro daño a un enemigo (y un mínimo).
-    const n = G.Game.everyone().length, t = G.Game.st.time;
+    const n = G.Game.everyone().length, t = G.Game.st.ft;   // (standalone: difficulty time, see modes.js)
     const floor = (3200 + t * 9) * 0.35 * G.Coop.scaleHp(n);
     base = Math.max(floor, singleDps() * 3);
     if (BOSS === GENGAR_B) G.Spawner.say('¡El gran Gengar te ha arrastrado a su Noche Espectral!', 4, true);
@@ -346,7 +346,7 @@ G.Judgment = (() => {
     const tg = target();
     if (A.cast) { castTick(dt, tg); return; }
     if (!tg) { A.anim.loop('Idle'); return; }
-    if (!broke && G.Game.st.time >= BREAK_AT) {
+    if (!broke && G.Game.st.ft >= BREAK_AT) {
       broke = true;
       cast('break', tg);
       if (G.Coop.isHost) G.Coop.broadcast(['jb']);
@@ -473,7 +473,7 @@ G.Judgment = (() => {
     const dex = cfg.q[bossN % cfg.q.length];
     const mon = G.DEX_BY[dex];
     if (!mon) return;
-    const t = G.Game.st.time, ts = TS();
+    const t = G.Game.st.ft, ts = TS();
     // Lejos de todos (en el borde de la arena).
     let x = center.x, y = center.y;
     for (let i = 0; i < 16; i++) {

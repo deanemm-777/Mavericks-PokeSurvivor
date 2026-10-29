@@ -29,20 +29,44 @@ G.Upgrades = (() => {
     return Math.round(u.base * Math.pow(u.grow, lvl) / 10) * 10;
   }
 
-  /** Niveles comprados -> modificadores para G.Player. */
-  function perks(levels = {}) {
+  /*
+   * Standalone build: PRESTIGE. Once every upgrade of a Pokémon is maxed it can
+   * be prestiged: its upgrades go back to level 0 (the one-time unlocks in
+   * KEEP stay) and it earns a star, up to MAX_STARS. Each star is permanent:
+   * STAR = +6 % damage, +6 % health, +5 % experience and +5 % coins.
+   * Stars live in save.pstar[dex].
+   */
+  const MAX_STARS = 5, KEEP = ['moves', 'start', 'start2'];
+  const STAR = { atk: 0.06, hp: 0.06, xp: 0.05, coins: 0.05 };
+  const starsOf = dex => { const s = G.DB && G.DB.save; return Math.max(0, Math.min(MAX_STARS, +((s && s.pstar || {})[dex]) || 0)); };
+  const allMaxed = levels => LIST.every(u => (+levels[u.id] || 0) >= u.max);
+  function prestige(dex) {
+    const s = G.DB.save, lv = G.DB.upgradesOf(dex);
+    if (!allMaxed(lv) || starsOf(dex) >= MAX_STARS) return false;
+    for (const u of LIST) if (!KEEP.includes(u.id)) lv[u.id] = 0;
+    s.pstar = s.pstar || {};
+    s.pstar[dex] = starsOf(dex) + 1;
+    G.DB.commit(true);
+    return true;
+  }
+
+  /** Niveles comprados -> modificadores para G.Player. (stars: standalone prestige) */
+  function perks(levels = {}, stars = 0) {
     // Nunca por encima del máximo (una partida editada a mano no da más poder).
     const L = id => Math.max(0, Math.min(BY[id].max, Math.floor(+levels[id] || 0)));
+    const st = Math.max(0, Math.min(MAX_STARS, stars | 0));
     return {
+      stars: st,
+      hpMul: 1 + st * STAR.hp,
       hp: L('hp') * 8,
-      atkMul: 1 + L('atk') * 0.04,
+      atkMul: (1 + L('atk') * 0.04) * (1 + st * STAR.atk),
       spdMul: 1 + L('spd') * 0.03,
       cdMul: 1 - L('cd') * 0.03,
       dmgReduce: L('def') * 0.02,
       regen: L('regen') * 0.2,
       magnetMul: 1 + L('magnet') * 0.12,
-      xpMul: 1 + L('xp') * 0.05,
-      coinMul: 1 + L('coins') * 0.08,
+      xpMul: (1 + L('xp') * 0.05) * (1 + st * STAR.xp),
+      coinMul: (1 + L('coins') * 0.08) * (1 + st * STAR.coins),
       startMoves: 1 + L('moves'),
       crit: L('crit') * 0.03,
       rerolls: L('reroll'),
@@ -50,5 +74,5 @@ G.Upgrades = (() => {
     };
   }
 
-  return { LIST, BY, cost, perks };
+  return { LIST, BY, cost, perks, prestige, starsOf, allMaxed, MAX_STARS, STAR, KEEP };
 })();

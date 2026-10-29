@@ -387,6 +387,8 @@ G.RunUI = (() => {
   function wirePause(onResume, onQuit) {
     $('btn-resume').onclick = onResume;
     $('btn-quit').onclick = onQuit;
+    const sq = $('btn-save-quit');
+    if (sq) sq.onclick = () => G.Game.saveAndQuit();
   }
 
   return { showLevelUp, reroll, showItemChoice, showBond, pickBond, bondBack, pick, setWaiting, closeLevelUp, showOver, wirePause, showPause };
