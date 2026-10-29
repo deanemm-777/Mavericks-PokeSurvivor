@@ -93,7 +93,7 @@ G.Game = (() => {
    * cierra la ventana de encima). En el menú principal no hay entrada de más:
    * «atrás» sale de la web, como siempre.
    */
-  const BACK_SCREENS = ['scr-modes', 'scr-dex', 'scr-upgrades', 'scr-shop', 'scr-bag', 'scr-gacha', 'scr-friends', 'scr-rank', 'scr-goals', 'scr-lobby', 'scr-mod'];
+  const BACK_SCREENS = ['scr-modes', 'scr-mart', 'scr-dex', 'scr-upgrades', 'scr-shop', 'scr-bag', 'scr-gacha', 'scr-friends', 'scr-rank', 'scr-goals', 'scr-lobby', 'scr-mod'];
   const shown = id => { const el = document.getElementById(id); return !!el && !el.classList.contains('hidden'); };
   let trapped = false;
   function needsTrap() {
@@ -725,7 +725,7 @@ G.Game = (() => {
     }
     if (state === 'ui') {
       // Esc en una subpantalla del menú vuelve al menú.
-      if (G.Input.tap('escape') && !G.UI.isOpen('scr-profile') && ['scr-modes', 'scr-dex', 'scr-upgrades', 'scr-shop', 'scr-bag', 'scr-gacha', 'scr-friends', 'scr-rank', 'scr-goals'].some(G.UI.isOpen)
+      if (G.Input.tap('escape') && !G.UI.isOpen('scr-profile') && ['scr-modes', 'scr-mart', 'scr-dex', 'scr-upgrades', 'scr-shop', 'scr-bag', 'scr-gacha', 'scr-friends', 'scr-rank', 'scr-goals'].some(G.UI.isOpen)
           && document.getElementById('pull-fx').classList.contains('hidden')) G.MenuUI.open();
       return;
     }

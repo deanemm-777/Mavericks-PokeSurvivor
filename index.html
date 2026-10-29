@@ -78,7 +78,7 @@
   ]
 }
 </script>
-<link rel="stylesheet" href="css/style.css?v=291e78313e">
+<link rel="stylesheet" href="css/style.css?v=3e171351d7">
 <script src="js/core/locales.js?v=fd491484e3"></script>
 <script src="js/noframe.js"></script>
 </head>
@@ -166,7 +166,7 @@
 
 <!-- ====== Menú principal ====== -->
 <section id="scr-menu" class="scr hidden">
-  <div id="build-tag" translate="no">build a27f9a</div>
+  <div id="build-tag" translate="no">build 0246d7</div>
   <div class="menu-left">
     <div class="logo">
       <div class="t1">PokéSurvivor<span class="splash offline-hide">Folagor, Sekiam, PokeAlex: ¿un hueco?</span></div>
@@ -187,6 +187,8 @@
         <button class="menu-item" data-go="dex">Pokémon<small id="menu-dex-count">Tu colección</small></button>
         <button class="menu-item" data-go="upgrades">Mejoras<small>Haz más fuerte cada run</small></button>
         <button class="menu-item" data-go="shop">Tienda Kecleon<small>Mentas, Cápsulas y MT</small></button>
+        <button class="menu-item" data-go="mart" translate="no">Poké Mart<small>Teach any TM, any day</small></button>
+        <button class="menu-item hidden" data-go="halloween" translate="no">Halloween Shop<small id="menu-hw-sub">Skins, Ghost Pokémon and tickets for candy</small></button>
         <button class="menu-item" data-go="bag">Mochila<small id="menu-bag-sub">Vacía</small></button>
         <button class="menu-item" data-go="gacha">Gacha<small>9 regiones · Pokémon y shinies</small></button>
         <button class="menu-item" data-go="goals">Misiones<small id="menu-goals-sub">Misiones, logros y perfil</small></button>
@@ -582,6 +584,14 @@
   </div>
 </section>
 
+<!-- ====== Standalone: Poké Mart and Halloween Shop (js/ui/mart-ui.js) ====== -->
+<section id="scr-mart" class="scr dim hidden">
+  <div class="box wide mart-box">
+    <div class="row between"><h2 id="mart-title">Poké Mart</h2><button class="btn small ghost" data-back>Back</button></div>
+    <div id="mart-body" class="mart-body"></div>
+  </div>
+</section>
+
 <!-- ====== Standalone: choose a mode / continue a saved run (js/ui/modes-ui.js) ====== -->
 <section id="scr-modes" class="scr dim hidden" translate="no">
   <div class="box modes-box">
@@ -627,6 +637,6 @@
 </section>
 
 <!-- datos generados -->
-<script defer src="js/app.min.js?v=5e4b4782c8"></script>
+<script defer src="js/app.min.js?v=df3e2baf6d"></script>
 </body>
 </html>

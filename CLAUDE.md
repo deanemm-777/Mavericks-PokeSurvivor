@@ -20,3 +20,4 @@ Personal, non-commercial build: no accounts, no cloud, no co-op, no ranking.
 - Mega Evolution and Z-moves (`js/systems/mega.js`): forms from SpriteCollab via `tools/fetch_megas.py` → `js/data/megas.js`, sprites under `assets/pokemon/{20000+dex}/`. L+R / M = Mega, SELECT / Z / Space = Z-move.
 - Save & resume (`js/systems/checkpoint.js`): checkpoint in `save.suspended` every 20 s, on pause, on backgrounding and with Save & quit.
 - Prestige (`js/data/upgrades.js`): stars in `save.pstar[dex]`, panel at the top of each Pokémon's Upgrades.
+- Poké Mart and Halloween Shop (`js/ui/mart-ui.js`, screen `scr-mart`): any TM any day for coins (1.5x the daily Kecleon price); skins, Ghost Pokémon, shiny Ghosts and tickets for candy. Menu is 3 columns on phones.

@@ -10,7 +10,7 @@ G.MenuUI = (() => {
   const SORTS = [['num', 'Nº'], ['name', 'Nombre'], ['rar', 'Rareza'], ['new', 'Recién conseguidos'], ['used', 'Más usados']];
 
   function init() {
-    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', shop: 'shop', bag: 'bag', gacha: 'ball4', goals: 'medal3', friends: 'friends', rank: 'trophy', settings: 'gear', theme: 'phone' };
+    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', shop: 'shop', bag: 'bag', gacha: 'ball4', goals: 'medal3', friends: 'friends', rank: 'trophy', settings: 'gear', theme: 'phone', mart: 'shop', halloween: 'candy' };
     document.querySelectorAll('#scr-menu [data-go]').forEach(b => {
       b.insertAdjacentHTML('afterbegin', `<span class="mi-ico">${G.Icons.html(ICON[b.dataset.go], 26)}</span>`);
       b.dataset.sfx = b.dataset.go === 'play' ? 'confirm' : 'click';
@@ -26,6 +26,8 @@ G.MenuUI = (() => {
         else if (go === 'friends') G.FriendsUI.open();
         else if (go === 'rank') G.RankingUI.open();
         else if (go === 'settings') G.SettingsUI.open();
+        else if (go === 'mart') G.MartUI.open('mart');
+        else if (go === 'halloween') G.MartUI.open('halloween');
         else if (go === 'theme') {
           // Standalone build: Game Boy skin <-> full screen with the touch joystick.
           const full = G.Settings.get('theme') !== 'full';
@@ -53,6 +55,9 @@ G.MenuUI = (() => {
 
   function open() {
     themeLine();
+    // Standalone: the Halloween Shop shows up from two weeks before until your candy is spent.
+    const hw = document.querySelector('#scr-menu [data-go=halloween]');
+    if (hw) hw.classList.toggle('hidden', !G.MartUI.hwVisible());
     const s = G.DB.save;
     const mon = G.DEX_BY[s.partner];
     const shiny = !!s.partnerShiny && G.DB.ownsShiny(mon.dex);

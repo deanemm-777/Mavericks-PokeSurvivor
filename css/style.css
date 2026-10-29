@@ -1263,3 +1263,18 @@ body.skin .menu-item.mode-item small, body.fullp .menu-item.mode-item small { di
 .pstar { color: rgba(255,255,255,.18); }
 .pstar.on, .pstars { color: var(--gold); text-shadow: 0 0 6px rgba(255,210,63,.5); }
 body.skin .toast { z-index: 70; bottom: auto !important; top: calc(var(--sy) + var(--sh) - 64px) !important; max-width: calc(var(--sw) - 16px); }
+
+/* Standalone: Poké Mart and Halloween Shop */
+.mart-box { width: min(720px, 100%); }
+@media (min-height: 521px) { #scr-mart { padding-top: 66px; } }
+body.fullp #scr-mart { padding-top: calc(44px + env(safe-area-inset-top)) !important; }
+body.skin #scr-mart { padding-top: 40px; }
+.mart-body .upg-item .ic canvas { width: 48px; height: auto; }
+.menu-item.hidden { display: none !important; }
+
+/* Main menu with the two shops added: three columns on phones so everything fits. */
+body.skin .menu-list, body.fullp .menu-list { grid-template-columns: 1fr 1fr 1fr; gap: 2px 3px; }
+body.skin .menu-item:not(.play) { font-size: 10.5px; padding: 5px 3px; grid-template-columns: 16px 1fr; column-gap: 3px; letter-spacing: 0; line-height: 1.15; }
+body.skin .menu-item:not(.play) .mi-ico canvas, body.skin .menu-item:not(.play) .mi-ico img, body.skin .menu-item:not(.play) .mi-ico svg { width: 16px !important; height: 16px !important; }
+body.fullp .menu-item:not(.play) { font-size: 12.5px; padding: 7px 4px; grid-template-columns: 18px 1fr; column-gap: 4px; letter-spacing: 0; line-height: 1.15; }
+body.fullp .menu-item:not(.play) .mi-ico canvas, body.fullp .menu-item:not(.play) .mi-ico img, body.fullp .menu-item:not(.play) .mi-ico svg { width: 18px !important; height: 18px !important; }
