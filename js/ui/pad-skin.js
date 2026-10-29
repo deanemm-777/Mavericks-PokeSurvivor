@@ -81,12 +81,23 @@ G.PadSkin = (() => {
    * screen is shorter than it is (by the status bar's height), which left a
    * black strip at the bottom. Use the real screen height when that happens.
    */
+  let probe = null;
   function appHeight() {
     const H = innerHeight;
     const standalone = navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches);
-    if (!standalone || !window.screen || innerWidth > H) return H;
-    const sw = Math.min(screen.width, screen.height), sh = Math.max(screen.width, screen.height);
-    return Math.abs(sw - innerWidth) < 2 && sh > H && sh - H < 80 ? sh : H;
+    if (!standalone || innerWidth > H) return H;
+    // Candidates for the real height: the screen itself, and what CSS thinks 100vh / 100lvh is.
+    if (!probe) {
+      probe = document.createElement('div');
+      probe.style.cssText = 'position:absolute;left:-9px;top:0;width:1px;height:100vh;height:100lvh;visibility:hidden;pointer-events:none';
+      document.body.appendChild(probe);
+    }
+    const sw = window.screen ? Math.min(screen.width, screen.height) : 0, sh = window.screen ? Math.max(screen.width, screen.height) : 0;
+    let best = H;
+    if (Math.abs(sw - innerWidth) < 2 && sh > H && sh - H < 90) best = sh;
+    const lv = probe.offsetHeight;
+    if (lv > best && lv - H < 90) best = lv;
+    return best;
   }
   function fixHeight() {
     const H = appHeight(), fix = H !== innerHeight;

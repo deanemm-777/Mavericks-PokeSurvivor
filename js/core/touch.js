@@ -172,6 +172,8 @@ G.Touch = (() => {
   /** Márgenes del iPhone (barra de inicio abajo, muesca a los lados), en px. */
   let safe = null;
   function safeArea() {
+    // Game Boy theme: the game sits inside the skin's screen, away from the phone's edges.
+    if (G.PadSkin && G.PadSkin.active) return { top: 0, right: 0, bottom: 0, left: 0 };
     if (safe) return safe;
     const d = document.createElement('div');
     d.style.cssText = 'position:fixed;left:0;top:0;visibility:hidden;pointer-events:none;' +

@@ -1244,3 +1244,5 @@ body.fullp #scr-rank, body.fullp #scr-lobby, body.fullp #scr-profile, body.fullp
 }
 body.fullp .scr .box { padding: 12px; }
 body.fullp .topbar { top: calc(4px + env(safe-area-inset-top)) !important; }
+#build-tag { position: absolute; right: calc(8px + env(safe-area-inset-right)); bottom: calc(2px + env(safe-area-inset-bottom)); font-size: 9px; color: rgba(200,215,240,.45); pointer-events: none; z-index: 1; }
+body.skin #build-tag { bottom: 1px; right: 6px; font-size: 8px; }

@@ -73,18 +73,23 @@ G.HUD = (() => {
     G.Touch.clearButtons();
     const touch = G.Touch.active;
 
-    // ---------- barra de experiencia (borde superior) ----------
+    // ---------- barra de experiencia ----------
+    // Standalone build: drawn below the status bar / Dynamic Island (it used to sit
+    // at the very top edge, hidden behind the clock on iPhone).
+    const sa = G.Touch.safeArea();
     const xpF = pl.xp / pl.xpNext;
-    ctx.fillStyle = 'rgba(0,0,0,.5)';
-    ctx.fillRect(0, 0, w, 7);
-    const g = ctx.createLinearGradient(0, 0, w, 0);
-    g.addColorStop(0, '#4fd1ff'); g.addColorStop(1, '#a98bff');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, w * G.U.clamp(xpF, 0, 1), 7);
+    const xx = 8 + sa.left, xw = w - 16 - sa.left - sa.right, xy = sa.top + 4, xh = 8;
+    roundRect(ctx, xx, xy, xw, xh, 4);
+    ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fill();
+    if (xpF > 0) {
+      const g = ctx.createLinearGradient(xx, 0, xx + xw, 0);
+      g.addColorStop(0, '#4fd1ff'); g.addColorStop(1, '#a98bff');
+      roundRect(ctx, xx, xy, Math.max(xh, xw * G.U.clamp(xpF, 0, 1)), xh, 4);
+      ctx.fillStyle = g; ctx.fill();
+    }
 
     // ---------- vida + nivel ----------
-    const sa = G.Touch.safeArea();
-    const px = 16 + sa.left, py = 20 + sa.top;     // lejos de la muesca del iPhone
+    const px = 16 + sa.left, py = 24 + sa.top;     // lejos de la muesca del iPhone
     ctx.font = F(800, 13);
     ctx.fillStyle = '#eaf2ff';
     ctx.textAlign = 'left';
@@ -120,7 +125,7 @@ G.HUD = (() => {
 
     // ---------- reloj / bioma / kills ----------
     // Portrait (narrow screens): the clock row moves below the HP block instead of overlapping it.
-    const oy = w < 560 ? 36 + sa.top : 0;
+    const oy = w < 560 ? 40 + sa.top : 0;
     ctx.textAlign = 'center';
     ctx.font = F(800, 26);
     ctx.fillStyle = 'rgba(255,255,255,.95)';
@@ -486,7 +491,7 @@ G.HUD = (() => {
       const sa = G.Touch.safeArea();
       const pp = G.Touch.spot('pause');
       const bx = pp ? G.U.clamp(pp[0] * w - 20, 4, w - 44) : w - 52 - Math.min(44, sa.right);
-      const by = pp ? G.U.clamp(pp[1] * h - 20, 10 + sa.top, h - 44) : (h > w ? sa.top + 8 : 12 + Math.min(20, sa.top)), bs = 40;   // portrait: below the status bar
+      const by = pp ? G.U.clamp(pp[1] * h - 20, 10 + sa.top, h - 44) : (h > w ? sa.top + 16 : 12 + Math.min(20, sa.top)), bs = 40;   // portrait: below the status bar
       roundRect(ctx, bx, by, bs, bs, 10);
       ctx.fillStyle = 'rgba(10,16,28,.7)'; ctx.fill();
       ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(244,248,255,.8)'; ctx.stroke();

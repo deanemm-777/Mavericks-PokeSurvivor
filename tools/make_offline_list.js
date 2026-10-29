@@ -16,6 +16,9 @@ for (const f of ['index.html', 'js/app.min.js', 'css/style.css']) h.update(fs.re
 const version = h.digest('hex').slice(0, 10);
 fs.writeFileSync(path.join(root, 'offline-files.js'),
   'self.OFFLINE = ' + JSON.stringify({ version, files }) + ';\n');
+// Show the version in the main menu (bottom right), to tell which build a phone runs.
+const idx = path.join(root, 'index.html');
+fs.writeFileSync(idx, fs.readFileSync(idx, 'utf8').replace(/<div id="build-tag" translate="no">[^<]*<\/div>/, `<div id="build-tag" translate="no">build ${version.slice(0, 6)}</div>`));
 // Stamp the version into sw.js itself, so its bytes change and phones see the update.
 const swPath = path.join(root, 'sw.js');
 fs.writeFileSync(swPath, fs.readFileSync(swPath, 'utf8').replace(/const BUILD = '[^']*';/, `const BUILD = '${version}';`));
