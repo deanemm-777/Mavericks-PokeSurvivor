@@ -21,3 +21,4 @@ Personal, non-commercial build: no accounts, no cloud, no co-op, no ranking.
 - Save & resume (`js/systems/checkpoint.js`): checkpoint in `save.suspended` every 20 s, on pause, on backgrounding and with Save & quit.
 - Prestige (`js/data/upgrades.js`): stars in `save.pstar[dex]`, panel at the top of each Pokémon's Upgrades.
 - Poké Mart and Halloween Shop (`js/ui/mart-ui.js`, screen `scr-mart`): any TM any day for coins (1.5x the daily Kecleon price); skins, Ghost Pokémon, shiny Ghosts and tickets for candy. Menu is 3 columns on phones.
+- Special and regional forms (`tools/fetch_forms.py` → `js/data/forms.js`, set up in `js/data/forms-setup.js`): ids 30000+ (regional/Bloodmoon) and 31000+ (Shadow), in G.DEX_BY/G.FORMS but not G.DEX; Special tab in the Pokédex; sold in the Halloween Shop.

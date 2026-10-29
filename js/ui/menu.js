@@ -1,7 +1,8 @@
 /* ============ menu.js — menú principal, colección y mejoras ============ */
 G.MenuUI = (() => {
   const $ = G.UI.$;
-  const GEN_NAMES = ['Kanto', 'Johto', 'Hoenn', 'Sinnoh', 'Teselia', 'Kalos', 'Alola', 'Galar', 'Paldea'];
+  const GEN_NAMES = ['Kanto', 'Johto', 'Hoenn', 'Sinnoh', 'Teselia', 'Kalos', 'Alola', 'Galar', 'Paldea', 'Special'];   // (Special: standalone forms, data/forms-setup.js)
+  const genList = g => (g === 10 ? G.FORMS : g ? G.DEX.filter(p => p.gen === g) : G.DEX);
   let dexGen = 1, dexSel = null;
   // Filtros de la colección (se combinan): tengo / me faltan, rarezas (varias),
   // shiny, favoritos, tipo y búsqueda; y el orden. Duran mientras no recargas.
@@ -86,7 +87,7 @@ G.MenuUI = (() => {
       };
     });
 
-    const owned = Object.keys(s.owned).filter(d => G.DEX_BY[d]).length;
+    const owned = Object.keys(s.owned).filter(d => G.DEX_BY[d] && !G.FORM_BY[d]).length;
     const shinies = Object.keys(s.shiny || {}).length;
     $('menu-dex-count').textContent = `${owned} / ${G.DEX.length}` + (shinies ? ` · ${shinies} shiny` : '');
 
@@ -163,14 +164,14 @@ G.MenuUI = (() => {
     G.UI.show('scr-dex', true);
     const s = G.DB.save;
     if (dexSel == null) { dexSel = s.partner; dexGen = G.DEX_BY[s.partner].gen; }
-    const owned = Object.keys(s.owned).filter(d => G.DEX_BY[d]).length;
+    const owned = Object.keys(s.owned).filter(d => G.DEX_BY[d] && !G.FORM_BY[d]).length;
     $('dex-total').textContent = `${owned} / ${G.DEX.length}`;
 
     // Pestañas de generación (y "Todas"), con cuántos tienes de cada una.
     const tabs = $('dex-gens');
     tabs.innerHTML = '';
     ['Todas', ...GEN_NAMES].forEach((name, g) => {
-      const list = g ? G.DEX.filter(p => p.gen === g) : G.DEX;
+      const list = genList(g);
       const have = list.filter(p => s.owned[p.dex]).length;
       const b = document.createElement('button');
       b.className = 'gen-tab' + (g === dexGen && !dexF.q ? ' on' : '');
@@ -233,11 +234,11 @@ G.MenuUI = (() => {
     const s = G.DB.save, f = dexF;
     const q = f.q.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const num = /^#?\d+$/.test(q) ? +q.replace('#', '') : null;
-    const list = G.DEX.filter(p => {
+    const list = (q ? G.DEX.concat(G.FORMS) : genList(dexGen)).filter(p => {
       const own = !!s.owned[p.dex];
       if (q) {
         // Por número, o por nombre (sin tildes); de los que no tienes no se busca el nombre.
-        if (num != null ? p.dex !== num : !(own && [p.name, G.T(p.name)].some(name => name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(q)))) return false;
+        if (num != null ? G.dexNo(p.dex) !== num : !(own && [p.name, G.T(p.name)].some(name => name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(q)))) return false;
       } else if (dexGen && p.gen !== dexGen) return false;
       if (f.status === 'own' && !own) return false;
       if (f.status === 'miss' && own) return false;
@@ -304,7 +305,7 @@ G.MenuUI = (() => {
     const cell = document.createElement('div');
     cell.className = 'cell' + (own ? '' : ' locked') + (p.dex === dexSel ? ' on' : '');
     cell.dataset.pad = '1';
-    cell.insertAdjacentHTML('beforeend', `<span class="no">${String(p.dex).padStart(3, '0')}${G.DB.isFav(p.dex) ? ' ' + G.Icons.html('star', 10) : ''}</span>`);
+    cell.insertAdjacentHTML('beforeend', `<span class="no">${String(G.dexNo(p.dex)).padStart(3, '0')}${G.DB.isFav(p.dex) ? ' ' + G.Icons.html('star', 10) : ''}</span>`);
     if (p.dex === s.partner) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Compañero">${G.Icons.html('crown', 14)}</span>`);
     else if (sh) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Tienes su shiny">${G.Icons.html('shiny', 12)}</span>`);
     const useShiny = sh && p.dex === s.partner && s.partnerShiny;
@@ -352,7 +353,7 @@ G.MenuUI = (() => {
           <button class="${viewShiny ? '' : 'on'}" data-v="0">Normal</button>
           <button class="${viewShiny ? 'on' : ''}" data-v="1">${G.Icons.html('shiny', 12)} Shiny</button></div>` : ''}
       <div class="center">
-        <div style="color:var(--muted);font-size:13px">Nº ${String(p.dex).padStart(3, '0')} · ${GEN_NAMES[p.gen - 1]}</div>
+        <div style="color:var(--muted);font-size:13px">Nº ${String(G.dexNo(p.dex)).padStart(3, '0')} · ${GEN_NAMES[p.gen - 1]}</div>
         <h3>${own ? p.name : '???'}</h3>
         ${own ? `<button id="dex-fav" class="chip${G.DB.isFav(dex) ? ' on' : ''}" type="button">${G.Icons.html(G.DB.isFav(dex) ? 'star' : 'starDim', 12)} ${G.DB.isFav(dex) ? 'Favorito' : 'Marcar como favorito'}</button>` : ''}
         <div style="color:${G.Gacha.RARITY_COLOR[p.rarity]}">${G.UI.stars(p.rarity, 24)} ${G.Gacha.RARITY_NAME[p.rarity]}</div>
@@ -374,7 +375,8 @@ G.MenuUI = (() => {
         ${usingThis
           ? '<button class="btn grow" disabled style="width:100%">Es tu compañero</button>'
           : `<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero${viewShiny ? ' (shiny)' : ''}</button>`}
-      ` : `<p class="center" style="color:var(--muted)">Aún no lo tienes.<br>Consíguelo en el banner de <b class="gold">${GEN_NAMES[p.gen - 1]}</b>
+      ` : G.FORM_BY[p.dex] ? `<p class="center" style="color:var(--muted)" translate="no">You don't have it yet.<br>Special forms come from the <b class="gold">Halloween Shop</b>.</p>`
+        : `<p class="center" style="color:var(--muted)">Aún no lo tienes.<br>Consíguelo en el banner de <b class="gold">${GEN_NAMES[p.gen - 1]}</b>
             o derrotándolo cuando salga shiny.</p>`}
     `;
     for (const [el, t] of scrolls) el.scrollTop = t;

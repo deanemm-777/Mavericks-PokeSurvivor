@@ -565,6 +565,17 @@ G.Player = class Player {
     }
     G.Sprites.drawShadow(ctx, this.dex, this.x, this.y, this.scale);
     if (G.Mega && this.mega) G.Mega.drawAura(ctx, this);     // standalone: Mega Evolution
+    if (this.mon.form === 'shadow' && !this.dead) {             // standalone: Shadow Pokémon aura
+      const t = performance.now() / 1000;
+      ctx.save();
+      for (let i = 0; i < 2; i++) {
+        ctx.globalAlpha = 0.28 + Math.sin(t * 3 + i * 2) * 0.1;
+        ctx.fillStyle = i ? '#5a1f8a' : '#2a0f45';
+        const r = this.r * (2.1 - i * 0.5) + Math.sin(t * 2.4 + i) * 1.5;
+        ctx.beginPath(); ctx.ellipse(this.x, this.y, r, r * 0.42, 0, 0, 6.2832); ctx.fill();
+      }
+      ctx.restore();
+    }
     // Poder de altar: aro de su color latiendo bajo los pies.
     if (this.power && !this.dead) {
       ctx.save();

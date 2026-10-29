@@ -4,9 +4,10 @@
  * learn, any day (the Kecleon Shop only has 8 a day, cheaper). Taught moves
  * stay with that Pokémon for good and join its level-up cards (save.ptm).
  *
- * HALLOWEEN SHOP (candy, data in save.bag.candy): the witch skins, Ghost-type
- * Pokémon you don't have yet, shiny versions of Ghost Pokémon you have, and
- * gacha tickets. Open during Halloween (30 Oct to 2 Nov, Spain time), shown
+ * HALLOWEEN SHOP (candy, data in save.bag.candy): Shadow Pokémon and other
+ * special forms, regional forms (data/forms-setup.js), the witch skins,
+ * Ghost-type Pokémon you don't have yet, shiny versions of Ghost Pokémon you
+ * have, and gacha tickets. Open during Halloween (30 Oct to 2 Nov, Spain time), shown
  * with a countdown in the two weeks before, and afterwards for as long as
  * you still have candy to spend.
  */
@@ -67,6 +68,9 @@ G.MartUI = (() => {
   const candy = () => G.Shop.count('candy');
   const GHOST_PRICE = [0, 40, 70, 120, 200, 400];
   const ghostPrice = d => GHOST_PRICE[Math.max(1, Math.min(5, G.DEX_BY[d].rarity || 1))];
+  // Special and regional forms (prices in candy).
+  const FORM_PRICE = { 31150: 700, 31249: 700, 31399: 300, 30901: 400, 30144: 400, 30145: 400, 30146: 400 };
+  const formPrice = d => FORM_PRICE[d] || (G.FORM_BY[d].form === 'shadow' ? 450 : 220);
   const TICKETS = [{ id: 't1', n: 1, price: 15, name: 'Gacha ticket ×1' }, { id: 't10', n: 1, price: 120, name: 'Gacha ticket ×10' }];
 
   function hwState() {
@@ -95,6 +99,17 @@ G.MartUI = (() => {
     const st = hwState(), have = candy(), s = G.DB.save;
     const btn = (attr, price) => st.open ? `<button class="btn small gold" ${attr} data-sfx="none" ${have < price ? 'disabled' : ''}>${candyHtml(price)}</button>` : `<span class="note">${candyHtml(price)}</span>`;
     let h = `<p class="sub" style="margin:4px 0 8px">${st.text} <b class="gold">You have ${candyHtml(have)} candy</b></p>`;
+    // Special forms (Shadow Pokémon, Bloodmoon) and regional forms
+    const formRow = p => {
+      const own = G.DB.owns(p.dex);
+      const desc = (p.form === 'shadow' ? 'A Shadow Pokémon: 10 % stronger attacks, 10 % less health, and a dark aura. ' : '') +
+        G.UI.typeChips(p.types) + (own ? '' : ' Joins your collection (Special tab).');
+      return row(`<canvas data-pv="${p.dex}" width="64" height="64"></canvas>`, p.name, desc,
+        own ? '<b class="gold">Owned</b>' : btn(`data-hform="${p.dex}"`, formPrice(p.dex)));
+    };
+    const special = G.FORMS.filter(p => p.form !== 'regional'), regional = G.FORMS.filter(p => p.form === 'regional');
+    h += `<h3 style="margin:10px 0 6px">${G.Icons.html('shiny', 18)} Special forms</h3><div class="upg">${special.map(formRow).join('')}</div>`;
+    h += `<h3 style="margin:12px 0 6px">${G.Icons.html('ball', 18)} Regional forms</h3><div class="upg">${regional.map(formRow).join('')}</div>`;
     // Witch skins
     h += `<h3 style="margin:10px 0 6px">${G.Icons.html('witch', 18)} Witch skins</h3><div class="upg">`;
     for (const id of G.Skins.LIST) {
@@ -150,6 +165,11 @@ G.MartUI = (() => {
       s.tickets = s.tickets || { t1: 0, t10: 0 };
       s.tickets[t.id] += t.n;
       msg = '+1 ' + t.name.toLowerCase();
+    } else if (kind === 'form') {
+      const d = +id;
+      if (!G.FORM_BY[d] || G.DB.owns(d) || !spendCandy(formPrice(d))) return render();
+      G.DB.grant(d, 'halloween');
+      msg = G.DEX_BY[d].name + ' joined your team! Find it in the Special tab of your Pokédex';
     } else if (kind === 'ghost') {
       const d = +id;
       if (G.DB.owns(d) || !spendCandy(ghostPrice(d))) return render();
@@ -162,7 +182,7 @@ G.MartUI = (() => {
       msg = 'Shiny ' + G.DEX_BY[d].name + ' is yours!';
     }
     G.DB.commit(true);
-    G.Audio.sfx(kind === 'ghost' || kind === 'shiny' ? 'shinyGet' : 'buy');
+    G.Audio.sfx(kind === 'ghost' || kind === 'shiny' || kind === 'form' ? 'shinyGet' : 'buy');
     G.UI.refreshCoins();
     G.UI.toast(msg, 2800);
     render();
@@ -181,6 +201,7 @@ G.MartUI = (() => {
       body.querySelectorAll('[data-hskin]').forEach(b => { b.onclick = () => hwBuy('skin', b.dataset.hskin); });
       body.querySelectorAll('[data-hticket]').forEach(b => { b.onclick = () => hwBuy('ticket', b.dataset.hticket); });
       body.querySelectorAll('[data-hghost]').forEach(b => { b.onclick = () => hwBuy('ghost', b.dataset.hghost); });
+      body.querySelectorAll('[data-hform]').forEach(b => { b.onclick = () => hwBuy('form', b.dataset.hform); });
       body.querySelectorAll('[data-hshiny]').forEach(b => { b.onclick = () => hwBuy('shiny', b.dataset.hshiny); });
       const more = $('hw-more');
       if (more) more.onclick = () => { ghostAll = true; render(); };
