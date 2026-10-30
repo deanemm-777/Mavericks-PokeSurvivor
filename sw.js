@@ -11,7 +11,7 @@
  */
 // BUILD is rewritten by tools/make_offline_list.js on every build, so this file's
 // bytes change with each version: that is what makes phones notice an update.
-const BUILD = '193fc412c0';
+const BUILD = '5efcec1c02';
 importScripts('offline-files.js?v=' + BUILD);  // defines self.OFFLINE = { version, files: [...] }
 const CACHE = 'ps-offline-' + self.OFFLINE.version;
 const CORE = ['./', './index.html', './manifest.webmanifest'];

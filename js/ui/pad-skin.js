@@ -39,7 +39,7 @@ G.PadSkin = (() => {
   ];
   const state = { up: false, down: false, left: false, right: false, a: false, b: false, l: false, r: false, start: false, select: false, menu: false };
   const pointers = new Map();        // pointerId -> control id (or 'dpad')
-  let root = null, shell = null, img = null, pad = null, glows = {}, k = 1, active = false;
+  let root = null, shell = null, bleed = null, img = null, pad = null, glows = {}, k = 1, active = false;
 
   function build() {
     // root: the whole skin over the page (lets touches through); pad: the controls, which take them.
@@ -49,6 +49,11 @@ G.PadSkin = (() => {
     shell = document.createElement('div');
     shell.className = 'pad-shell';
     root.appendChild(shell);
+    // Shell-coloured strip below the controls: whatever the phone shows under the
+    // page (iOS 26 home-screen apps can leave a strip it draws itself) is blue, not black.
+    bleed = document.createElement('div');
+    bleed.className = 'pad-bleed';
+    root.appendChild(bleed);
     img = document.createElement('img');
     img.src = 'assets/skin/controls.png';
     img.alt = '';
@@ -94,16 +99,46 @@ G.PadSkin = (() => {
     }
     const sw = window.screen ? Math.min(screen.width, screen.height) : 0, sh = window.screen ? Math.max(screen.width, screen.height) : 0;
     let best = H;
-    if (Math.abs(sw - innerWidth) < 2 && sh > H && sh - H < 90) best = sh;
+    if (Math.abs(sw - innerWidth) < 2 && sh > H && sh - H < 130) best = sh;
     const lv = probe.offsetHeight;
-    if (lv > best && lv - H < 90) best = lv;
+    if (lv > best && lv - H < 130) best = lv;
     return best;
   }
   function fixHeight() {
     const H = appHeight(), fix = H !== innerHeight;
     document.documentElement.style.setProperty('--app-h', H + 'px');
     document.body.classList.toggle('vhfix', fix);
+    screenInfo(H);
     return H;
+  }
+
+  /*
+   * The colour behind the page. iOS paints any part of the screen the page can't
+   * reach (home-screen apps on iOS 26 can lose a strip at the top or bottom) with
+   * the page's background colour, so match it to what is next to it: the blue
+   * shell with the Game Boy skin, the dark game with the full-screen theme.
+   * (iOS may keep the old colour until the app is closed and opened again.)
+   */
+  let lastBg = '';
+  function backdrop(skin) {
+    const bg = skin ? '#0845df' : '#050914';
+    if (bg === lastBg) return;
+    lastBg = bg;
+    document.documentElement.style.background = bg;
+    document.body.style.background = bg;
+    const m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.setAttribute('content', bg);
+  }
+
+  /** Screen sizes as the phone reports them, shown small under the build label (for fixing fit issues). */
+  function screenInfo(H) {
+    const tag = document.getElementById('build-tag');
+    if (!tag) return;
+    if (!tag.dataset.build) tag.dataset.build = tag.textContent;
+    const sa = G.Touch && G.Touch.safeArea ? G.Touch.safeArea() : { top: 0, bottom: 0 };
+    const sh = window.screen ? Math.max(screen.width, screen.height) : 0;
+    const lv = probe ? probe.offsetHeight : 0;
+    tag.textContent = tag.dataset.build + ' · ' + innerWidth + '×' + innerHeight + ' s' + sh + (lv ? ' l' + lv : '') + ' h' + H + ' ' + Math.round(sa.top) + '/' + Math.round(sa.bottom);
   }
 
   function layout() {
@@ -112,6 +147,7 @@ G.PadSkin = (() => {
     const want = portrait && (G.Touch.active || innerWidth < 700) && G.Settings.get('theme') !== 'full';   // Theme in the main menu
     // Full-screen theme in portrait gets its own compact menu layout (css: body.fullp).
     document.body.classList.toggle('fullp', portrait && !want && (G.Touch.active || innerWidth < 700));
+    backdrop(want);
     if (want !== active) {
       active = want;
       document.body.classList.toggle('skin', active);
@@ -126,6 +162,7 @@ G.PadSkin = (() => {
     const dw = MAP_W * k, ox = Math.round((W - dw) / 2);
     for (const el of [shell, img, pad]) { el.style.left = ox + 'px'; el.style.width = dw + 'px'; }
     const ch = (MAP_H - CROP) * k, ctop = H - ch;
+    bleed.style.top = (ctop + ch * 0.5) + 'px';
     img.style.top = ctop + 'px';
     img.style.height = ch + 'px';
     pad.style.top = ctop + 'px';

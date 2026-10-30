@@ -1149,7 +1149,9 @@ body.skin #game { border-radius: var(--sr); }
 #pad-skin .pad-a, #pad-skin .pad-b, #pad-skin .pad-start, #pad-skin .pad-select { background: radial-gradient(circle, rgba(255,255,255,.38), rgba(255,255,255,0) 70%); }
 #pad-skin .pad-l, #pad-skin .pad-r, #pad-skin .pad-menu { border-radius: 999px; background: rgba(255,255,255,.22); }
 #pad-skin .pad-dpad { background: radial-gradient(circle at calc(50% + var(--ox, 0%)) calc(50% + var(--oy, 0%)), rgba(255,255,255,.4), rgba(255,255,255,0) 30%); }
-body.skin { background: #000; }
+body.skin { background: #0845df; }
+html { background: #050914; }
+#pad-skin .pad-bleed { position: absolute; left: -20px; right: -20px; height: 400px; background: #0845df; }
 /* The game screen and every overlay live in the window. */
 body.skin #game { inset: auto; left: var(--sx); top: var(--sy); width: var(--sw); height: var(--sh); }
 body.skin .scr, body.skin #pull-fx, body.skin #tap-start, body.skin .boot, body.skin #rotate {
