@@ -55,7 +55,7 @@ G.Waves = (() => {
     phase = 'grace'; graceT = restore ? 2 : 2.5;
     toSpawn = spawned = 0; acc = 0; boss = null; objs = [];
   }
-  function stop() { on = false; objs = []; boss = null; }
+  function stop() { on = false; for (const o of objs) if (o.kind === 'lanterns') for (const l of o.items) l.out = false; objs = []; boss = null; }
 
   const isBossRound = r => r % BOSS_EVERY === 0;
   const isSwarm = r => r % SWARM_EVERY === 0 && !isBossRound(r);
@@ -212,17 +212,32 @@ G.Waves = (() => {
                title: () => 'Free the caged Pokémon ' + items.filter(c => c.done).length + '/' + items.length };
     }
     if (kind === 'lanterns') {
-      const c = spot(pl, 250, 420, 60);
-      if (!c) return null;
-      const items = [];
-      for (let i = 0; i < 4 && items.length < 4; i++) {
-        const a = i * Math.PI / 2 + G.U.rand(-0.3, 0.3);
-        for (let tries = 0; tries < 10; tries++) {
-          const d = G.U.rand(70, 110), x = c.x + Math.cos(a) * d, y = c.y + Math.sin(a) * d * 0.8;
-          if (G.World.isFree(x, y, 14)) { items.push({ x, y, prog: 0, done: false, wig: Math.random() * 10 }); break; }
-        }
+      // Four of the map's lanterns go out (hh-decor.js): their part of the map goes dark.
+      const ls = G.HHDecor.lanternsNear(pl.x, pl.y, 800).filter(l => !l.out);
+      const far = ls.filter(l => { const d = G.U.dist(l.x, l.y, pl.x, pl.y); return d > 220 && d < 560; });
+      let items = [];
+      if (far.length) {
+        const c = G.U.pick(far);
+        items = [c, ...ls.filter(l => l !== c && G.U.dist(l.x, l.y, c.x, c.y) < 520)
+          .sort((a, b) => G.U.dist2(a.x, a.y, c.x, c.y) - G.U.dist2(b.x, b.y, c.x, c.y)).slice(0, 3)];
       }
-      if (items.length < 2) return null;
+      if (items.length >= 3) {
+        for (const l of items) Object.assign(l, { out: true, prog: 0, done: false, decor: true });
+        G.Audio.sfx('descend');
+      } else {
+        // Not enough lanterns around (a lake, say): put up four.
+        items = [];
+        const c = spot(pl, 250, 420, 60);
+        if (!c) return null;
+        for (let i = 0; i < 4; i++) {
+          const a = i * Math.PI / 2 + G.U.rand(-0.3, 0.3);
+          for (let tries = 0; tries < 10; tries++) {
+            const d = G.U.rand(70, 110), x = c.x + Math.cos(a) * d, y = c.y + Math.sin(a) * d * 0.8;
+            if (G.World.isFree(x, y, 14)) { items.push({ x, y, prog: 0, done: false, wig: Math.random() * 10 }); break; }
+          }
+        }
+        if (items.length < 2) return null;
+      }
       return { kind, t: OBJ_TIME, items, intro: 'The lanterns went out! Light them again',
                title: () => 'Light the lanterns ' + items.filter(l => l.done).length + '/' + items.length };
     }
@@ -293,7 +308,7 @@ G.Waves = (() => {
           if (l.done) continue;
           if (near(pl, l, 48)) l.prog += dt / 1.5; else l.prog = Math.max(0, l.prog - 0.6 * dt);
           if (l.prog >= 1) {
-            l.done = true; G.Audio.sfx('select');
+            l.done = true; l.out = false; G.Audio.sfx('select');
             G.FX.burst(l.x, l.y - 30, '#ffb347', 12, 90);
             G.Spawner.say('Lantern lit (' + o.items.filter(x => x.done).length + '/' + o.items.length + ')', 1.4, true);
           }
@@ -325,7 +340,9 @@ G.Waves = (() => {
         }
         if (o.items.every(dr => dr.done)) complete(o, pl);
       }
-      if (!o.status && o.t <= 0) { o.status = 'failed'; G.Spawner.say('Objective failed', 2, true); G.Audio.sfx('back'); }
+      if (!o.status && o.t <= 0) {
+        if (o.kind === 'lanterns') for (const l of o.items) l.out = false;
+        o.status = 'failed'; G.Spawner.say('Objective failed', 2, true); G.Audio.sfx('back'); }
     }
     objs = objs.filter(o => !o.status || o.fade < 2.5);
   }
@@ -409,20 +426,7 @@ G.Waves = (() => {
    * drawn ×2 like the map's other props). The hand-drawn versions below are only
    * used until the sheet has loaded.
    */
-  const SHEET = {
-    chapel: [0, 0, 180, 186], crypt0: [181, 0, 48, 52], crypt1: [0, 187, 48, 52], crypt2: [49, 187, 48, 52],
-    cageLocked: [98, 187, 24, 28], cageBars: [123, 187, 24, 28], cageOpen: [148, 187, 24, 28],
-    lanternLit: [173, 187, 8, 23], lanternOut: [182, 187, 8, 23]
-  };
-  const sheet = new Image();
-  let sheetOk = false;
-  sheet.onload = () => { sheetOk = true; };
-  sheet.src = 'assets/halloween/hh-props.png';
-  /** Draws a sheet piece ×2, bottom-centred on (x, y). */
-  function piece(ctx, name, x, y, k = 2) {
-    const [sx, sy, w, h] = SHEET[name];
-    ctx.drawImage(sheet, sx, sy, w, h, Math.round(x - w * k / 2), Math.round(y - h * k + 2), w * k, h * k);
-  }
+  const piece = (...a) => G.HHDecor.piece(...a);
 
   function drawCageImg(ctx, c) {
     groundShadow(ctx, c.x, c.y, 24);
@@ -482,7 +486,7 @@ G.Waves = (() => {
   }
 
   function drawCage(ctx, c, t) {
-    if (sheetOk) return drawCageImg(ctx, c);
+    if (G.HHDecor.ok) return drawCageImg(ctx, c);
     groundShadow(ctx, c.x, c.y, 22);
     const W = 34, H = 40, x0 = c.x - W / 2, y0 = c.y - H;
     if (!c.done || c.hop < 1.2) {
@@ -509,7 +513,8 @@ G.Waves = (() => {
   }
 
   function drawLantern(ctx, l, t) {
-    if (sheetOk) return drawLanternImg(ctx, l, t);
+    if (l.decor) { if (!l.done) ring(ctx, l.x, l.y, l.prog, '#ffb347'); return; }
+    if (G.HHDecor.ok) return drawLanternImg(ctx, l, t);
     groundShadow(ctx, l.x, l.y, 8);
     rect(ctx, '#2a1d14', l.x - 1.5, l.y - 30, 3, 30);   // post
     rect(ctx, '#4a3526', l.x - 1, l.y - 30, 1, 30);
@@ -529,7 +534,7 @@ G.Waves = (() => {
   }
 
   function drawChapel(ctx, c, t) {
-    if (sheetOk) return drawChapelImg(ctx, c, t);
+    if (G.HHDecor.ok) return drawChapelImg(ctx, c, t);
     groundShadow(ctx, c.x, c.y, 40);
     const W = 64, H = 38, x0 = c.x - W / 2, y0 = c.y - H;
     rect(ctx, '#3a3646', x0, y0, W, H);                   // walls
@@ -572,7 +577,7 @@ G.Waves = (() => {
   }
 
   function drawDoor(ctx, d, t) {
-    if (sheetOk) return drawDoorImg(ctx, d, t);
+    if (G.HHDecor.ok) return drawDoorImg(ctx, d, t);
     groundShadow(ctx, d.x, d.y, 28);
     const W = 44, H = 30, x0 = d.x - W / 2, y0 = d.y - H;
     rect(ctx, '#3b2a1e', x0, y0, W, H);                   // planks
@@ -603,7 +608,7 @@ G.Waves = (() => {
     for (const o of objs) {
       if (o.status === 'failed') continue;
       if (o.kind === 'cage') for (const c of o.items) out.push({ y: c.y, draw: ctx => drawCage(ctx, c, t) });
-      if (o.kind === 'lanterns') for (const l of o.items) out.push({ y: l.y, draw: ctx => drawLantern(ctx, l, t) });
+      if (o.kind === 'lanterns') for (const l of o.items) if (!l.decor) out.push({ y: l.y, draw: ctx => drawLantern(ctx, l, t) });
       if (o.kind === 'doors') for (const d of o.items) out.push({ y: d.y, draw: ctx => drawDoor(ctx, d, t) });
       if (o.kind === 'escort') {
         out.push({ y: o.chapel.y, draw: ctx => drawChapel(ctx, o.chapel, t) });
@@ -618,7 +623,7 @@ G.Waves = (() => {
     const out = [];
     for (const o of objs) {
       if (o.status === 'failed') continue;
-      if (o.kind === 'lanterns') for (const l of o.items) out.push({ x: l.x, y: l.y - 37, r: l.done ? 150 : 50, col: l.done ? 'rgba(255,160,60,.3)' : null });
+      if (o.kind === 'lanterns') for (const l of o.items) if (!l.decor) out.push({ x: l.x, y: l.y - 37, r: l.done ? 150 : 50, col: l.done ? 'rgba(255,160,60,.3)' : null });
       if (o.kind === 'cage') for (const c of o.items) out.push({ x: c.x, y: c.y - 20, r: 70 });
       if (o.kind === 'doors') for (const d of o.items) out.push({ x: d.x + 30, y: d.y - 8, r: 90, col: 'rgba(255,138,42,.22)' });
       if (o.kind === 'escort') { out.push({ x: o.chapel.x, y: o.chapel.y - 20, r: 160, col: 'rgba(255,190,90,.18)' }); out.push({ x: o.lost.x, y: o.lost.y - 10, r: 60 }); }

@@ -188,6 +188,7 @@ G.Game = (() => {
     G.Hazards.clear();
     runSeed = coop ? coop.seed : snap && snap.seed ? snap.seed : Math.floor(Math.random() * 1e6);
     G.World.reset(runSeed);
+    G.HHDecor.reset(runSeed);
     G.Modes.start(snap ? snap.mode : opt.mode || 'normal', snap ? snap.ms : null);
     G.World.setBiome(G.Tiles.runBiome(0), true);
     biome = 0;
@@ -935,6 +936,7 @@ G.Game = (() => {
     if (arceus) items.push({ y: arceus.y, ent: arceus });
     if (pl && state !== 'ui') for (const d of G.Events.drawables()) items.push({ y: d.y, ent: d });
     if (pl && state !== 'ui') for (const d of G.Waves.drawables()) items.push({ y: d.y, ent: d });
+    if (pl && state !== 'ui') for (const d of G.HHDecor.drawables(cam)) items.push({ y: d.y, ent: d });
     items.sort((a, b) => a.y - b.y);
     for (const it of items) {
       if (it.prop) G.World.drawProp(ctx, it.prop, t);
@@ -984,6 +986,12 @@ G.Game = (() => {
     G.Judgment.drawAir(ctx);
     ctx.restore();
 
+    // Standalone: the Haunted Hollow night (world/hh-decor.js), lit by lanterns, your partner and the objectives.
+    if (pl && G.HHDecor.on) {
+      const L = G.Waves.on ? G.Waves.lights() : [];
+      for (const p of everyone()) if (!p.dead) L.push({ x: p.x, y: p.y - 12, r: 150 });
+      G.HHDecor.drawNight(ctx, w, h, G.Camera, performance.now() / 1000, L);
+    }
     G.Weather.draw(ctx, w, h, frameDt);
     G.World.drawVignette(ctx, w, h);
     // Niebla: la viñeta se cierra un poco (sin tapar el centro).
@@ -1099,12 +1107,7 @@ G.Game = (() => {
       G.Camera.apply(ctx);
       drawScene(G.Camera, wanderers);
       ctx.restore();
-      if (pl && G.Waves.on) {
-        // Halloween Waves: a darker night, lit by your partner, lanterns and the chapel.
-        const L = G.Waves.lights();
-        for (const p of everyone()) if (!p.dead) L.push({ x: p.x, y: p.y - p.bodyH * 0.5, r: 85 });
-        G.World.drawNight(ctx, w, h, G.Camera, t, L);
-      } else if (G.Halloween.on) G.World.drawNight(ctx, w, h, G.Camera, t);
+      if (G.Halloween.on) G.World.drawNight(ctx, w, h, G.Camera, t);
       G.World.drawVignette(ctx, w, h);
     }
 
