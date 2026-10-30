@@ -355,7 +355,8 @@ G.Waves = (() => {
       if (r < 0.4) {
         const pw = G.U.pick(G.Interact.POWERS);
         pl.addPower(pw, 15);
-        dr.res = 'treat'; G.Spawner.say('Treat! ' + pw.name + ': ' + pw.desc + ' for 15 s', 2.6, true);
+        const EN = { dmg: 'Fury: double damage', spd: 'Bolt: +45% speed', mag: 'Magnet: pulls everything in', cd: 'Haste: -40% cooldowns' };
+        dr.res = 'treat'; G.Spawner.say('Treat! ' + (EN[pw.id] || pw.name) + ' for 15 s', 2.6, true);
         G.FX.ring(pl.x, pl.y, 8, 90, pw.color, 0.5, 4);
       } else if (r < 0.75) {
         G.Pickups.drop('candy', dr.x, dr.y + 10, 3);
