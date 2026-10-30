@@ -196,6 +196,7 @@ G.Game = (() => {
     runReal = performance.now(); tampered = false;
 
     pl = new G.Player(mon, perks, snap ? !!snap.shiny : !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
+    pl.xpMul *= G.Modes.diff.xp;            // difficulty (update 40)
     G.Orbs.reset();
     pl.setAbility(G.Mons.abilityOf(mon.dex).id);
     pl.anim.skin = G.Skins.worn(save, mon.dex) || null;      // su disfraz (core/skins.js)
@@ -649,8 +650,9 @@ G.Game = (() => {
       return;
     }
     if (p.kind === 'coin') {
-      pl.coins += p.value;
-      G.FX.dmgText(who.x, who.y - who.bodyH - 6, '+' + p.value, '#ffd23f');
+      const v = p.value * (mine && pl.hasItem && pl.hasItem('amuletcoin') ? 2 : 1);   // Amulet Coin (update 40)
+      pl.coins += v;
+      G.FX.dmgText(who.x, who.y - who.bodyH - 6, '+' + v, '#ffd23f');
       return;
     }
     if (p.kind === 'item') {

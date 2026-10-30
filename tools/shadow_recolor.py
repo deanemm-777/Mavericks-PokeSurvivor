@@ -22,7 +22,11 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import fetch_sprites as fs  # noqa: E402
 
-FORMS = {31006: 6, 31212: 212, 31399: 399, 31526: 526, 31623: 623, 31937: 937}
+FORMS = {31006: 6, 31212: 212, 31399: 399, 31526: 526, 31623: 623, 31937: 937,
+         # update 40: ten more Shadow Pokémon, and the Shadow Megas / Kyurem fusions
+         31024: 24, 31149: 149, 31169: 169, 31213: 213, 31248: 248, 31330: 330, 31384: 384,
+         31646: 646, 31693: 693, 31721: 721,
+         21150: 20150, 21248: 20248, 21384: 20384, 24646: 22646, 25646: 23646}
 NEUTRAL_S = 0.16          # below this saturation a colour counts as grey
 FAMILY = 38 / 360         # hue distance that still counts as the main colour
 
@@ -94,7 +98,10 @@ def apply(src, dst, cmap):
 
 
 def main():
+    only = {int(a) for a in sys.argv[1:]}
     for fid, base in FORMS.items():
+        if only and fid not in only:
+            continue
         bdir = os.path.join(fs.OUT_ASSETS, str(base))
         odir = os.path.join(fs.OUT_ASSETS, str(fid))
         for sub in ['', 's']:

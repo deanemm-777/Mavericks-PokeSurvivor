@@ -21,8 +21,9 @@ G.Items = (() => {
       on: () => {}, off: () => {} },
     { id: 'shellbell', name: 'Cascabel Concha', desc: 'Recuperas vida con el daño que haces.',
       on: () => {}, off: () => {} },
-    { id: 'amuletcoin', name: 'Moneda Amuleto', desc: '+50% de Pokémonedas al acabar la run.',
-      on: p => { p.coinMul *= 1.5; }, off: p => { p.coinMul /= 1.5; } },
+    // Standalone (Doofcraft update 40): doubles the coins you pick up while you hold it.
+    { id: 'amuletcoin', name: 'Amulet Coin', desc: 'Doubles the coins you pick up while you hold it.',
+      on: () => {}, off: () => {} },
     { id: 'luckyegg', name: 'Huevo Suerte', desc: '+30% de experiencia.',
       on: p => { p.xpMul *= 1.3; }, off: p => { p.xpMul /= 1.3; } },
     { id: 'lifeorb', name: 'Vidasfera', desc: '+30% de daño, pero cada ataque te quita un poco de vida.',
@@ -33,7 +34,14 @@ G.Items = (() => {
       on: () => {}, off: () => {} },
     { id: 'assaultvest', name: 'Chaleco Asalto', desc: '+20% de reducción de daño recibido.',
       // (aparte del tope del 70 % de las cartas Coraza: ver Player.reduction)
-      on: p => { p.itemReduce += 0.2; }, off: p => { p.itemReduce -= 0.2; } }
+      on: p => { p.itemReduce += 0.2; }, off: p => { p.itemReduce -= 0.2; } },
+    // Standalone (Doofcraft update 40)
+    { id: 'scopelens', name: 'Scope Lens', desc: '+20 percentage points of critical hit chance.',
+      on: p => { p.critChance += 0.2; }, off: p => { p.critChance -= 0.2; } },
+    { id: 'muscleband', name: 'Muscle Band', desc: '+20% damage with close-range moves.',
+      on: () => {}, off: () => {} },
+    { id: 'wiseglasses', name: 'Wise Glasses', desc: '+20% damage with ranged moves.',
+      on: () => {}, off: () => {} }
   ];
   const BY = {};
   for (const it of LIST) BY[it.id] = it;

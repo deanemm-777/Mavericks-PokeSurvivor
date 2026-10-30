@@ -240,7 +240,12 @@
       }
       if (this.golden && Math.random() < 0.35) G.Pickups.drop('coin', this.x + 6, this.y - 4, 3);
       // Duende del tesoro: Meowth suelta monedas; Gholdengo, un ticket ×10.
-      if (this.behavior === 'thief') {
+      if (this.behavior === 'thief' && this.def.loot === 'candy') {
+        // Greedent Candy Thief (Halloween Waves, update 40): 5-10 candy.
+        const n = this.def.candy || 5;
+        for (let i = 0; i < n; i++) G.Pickups.drop('candy', this.x + G.U.rand(-30, 30), this.y + G.U.rand(-22, 22), 1);
+        G.FX.ring(this.x, this.y, this.r, this.r * 5, '#ff9a3c', 0.6, 4);
+      } else if (this.behavior === 'thief') {
         const n = this.def.loot === 'ticket10' ? 6 : 20;
         for (let i = 0; i < n; i++) G.Pickups.drop('coin', this.x + G.U.rand(-36, 36), this.y + G.U.rand(-26, 26), 5);
         if (this.def.loot === 'ticket10') G.Pickups.drop('ticket10', this.x, this.y - 12, 1);

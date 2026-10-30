@@ -23,6 +23,13 @@ G.Modes = (() => {
   const BY = {};
   for (const m of LIST) BY[m.id] = m;
 
+  /** Difficulty (Doofcraft update 40), on top of the mode. */
+  const DIFFS = {
+    easy:   { id: 'easy',   name: 'Easy',   reward: 0.8,  spd: 0.85, xp: 1,    hp: 1 },
+    medium: { id: 'medium', name: 'Medium', reward: 1,    spd: 1,    xp: 1,    hp: 1 },
+    hard:   { id: 'hard',   name: 'Hard',   reward: 1.25, spd: 1.15, xp: 0.85, hp: 1.3 }
+  };
+  let diff = DIFFS.medium;
   let mode = 'normal';
   // Endless rounds
   let round = 1, roundKills = 0, killsAtStart = 0, bossNo = 0, clearT = 0;
@@ -31,6 +38,7 @@ G.Modes = (() => {
 
   function start(id, restore = null) {
     mode = BY[id] ? id : 'normal';
+    diff = DIFFS[(restore && restore.diff) || G.Settings.get('difficulty')] || DIFFS.medium;
     round = 1; roundKills = 0; killsAtStart = 0; bossNo = 0; clearT = 0;
     if (restore) { round = restore.round || 1; roundKills = restore.roundKills || 0; bossNo = restore.bossNo || 0; }
     if (G.Rift.setAuto) G.Rift.setAuto(mode !== 'endless' && mode !== 'waves');
@@ -78,10 +86,12 @@ G.Modes = (() => {
     /** Modes without Arceus's Judgment. */
     get noJudgment() { return mode === 'endless' || mode === 'waves'; },
     get fast() { return mode === 'fast'; },
-    get coinMul() { return mode === 'fast' ? 1.5 : 1; },
+    get coinMul() { return (mode === 'fast' ? 1.5 : 1) * diff.reward; },
+    get diff() { return diff; },
+    DIFFS,
     get round() { return mode === 'waves' ? G.Waves.round : round; },
     get roundKills() { return roundKills; },
     get clearT() { return clearT; },
-    state() { return mode === 'waves' ? { waves: G.Waves.state() } : { round, roundKills, bossNo }; }
+    state() { return Object.assign(mode === 'waves' ? { waves: G.Waves.state() } : { round, roundKills, bossNo }, { diff: diff.id }); }
   };
 })();

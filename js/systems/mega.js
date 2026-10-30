@@ -10,7 +10,7 @@
  * Z-MOVES (every Pokémon):
  *   The Z meter fills as you defeat Pokémon. When it is full, unleash the
  *   Z-move of your active move's type (SELECT, the Z key, or the Z button):
- *   every Pokémon on screen faints, bosses and legendaries lose 12 % of their
+ *   every Pokémon on screen faints, bosses and legendaries lose 18 % of their
  *   health, and Arceus takes a hit to its damage tally.
  *
  * Neither meter charges in a rift arena or during the Judgment cutscene, and
@@ -62,8 +62,9 @@ G.Mega = (() => {
 
   function megaEvolve() {
     if (!megaReady()) return false;
-    const m = info(pl.dex);
-    megaCharge = 0; megaT = MEGA_TIME; megaUses++;
+    // Two forms (Mega Charizard X / Y, Black / White Kyurem): they take turns.
+    const base = info(pl.dex), m = base.alt && megaUses % 2 === 1 ? Object.assign({}, base, base.alt, { alt: null }) : base;
+    megaCharge = 0; megaT = base.fusion ? Infinity : MEGA_TIME; megaUses++;
     pl.atkMul *= 1.4; pl.spdMul *= 1.15; pl.cdMul *= 0.85;
     pl.mega = m;
     if (m.spr && G.SPRITE_META[m.spr]) {
@@ -78,7 +79,7 @@ G.Mega = (() => {
     G.Game.flash('#ffffff', 0.35);
     G.FX.ring(pl.x, pl.y, 10, 160, '#ff9df5', 0.7, 6);
     G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, '#ffd6ff', 40, 260);
-    G.Spawner.say(pl.mon.name + ' Mega Evolved into ' + m.n + '!', 3, true);
+    G.Spawner.say(base.fusion ? pl.mon.name + ' fused into ' + m.n + '!' : pl.mon.name + ' Mega Evolved into ' + m.n + '!', 3, true);
     return true;
   }
 
@@ -114,7 +115,8 @@ G.Mega = (() => {
     for (const e of G.EnemyMgr.all()) {
       if (e.dead || !G.Camera.sees(e.x, e.y, 40)) continue;
       const big = e.boss || e.leg || e.arceus;
-      const dmg = big ? e.maxHp * 0.12 * Math.min(2, Math.max(1, scale)) : e.hp + e.maxHp;
+      // Update 40: 50 % stronger, up to 40 % of a boss's health.
+      const dmg = big ? Math.min(e.maxHp * 0.4, e.maxHp * 0.18 * Math.min(2, Math.max(1, scale))) : e.hp + e.maxHp;
       e.hurt(dmg, col, e.x - pl.x, e.y - pl.y, 220);
     }
     return true;

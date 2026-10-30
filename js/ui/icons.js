@@ -166,6 +166,15 @@ G.Icons = (() => {
     ballLux: { pal: { r: '#30303a', s: '#18181e', w: '#ff5f6d', b: '#ffd23f' }, rows: [
       '....kkkk....', '..kkrrrrkk..', '.krwrrrrrrk.', '.krwrrrrrsk.', 'krrrrkkrrssk', 'kkkkkbbkkkkk', 'kbbbkbbkbbbk', 'kbbbbkkbbbbk', '.kbbbbbbbbk.', '.kbbbbbbbbk.', '..kkbbbbkk..', '....kkkk....'] },
     // ---------- objetos equipables (data/items.js) ----------
+    scopelens: { pal: { b: '#4fb4ff', d: '#2a6fb0', w: '#e8f6ff', g: '#9aa6b5', r: '#ff5f6d' }, rows: [
+      '............', '...kkkkk....', '..kbbwwbk...', '.kbbwbbbdk..', '.kbwbrbbdk..', '.kbbrrrbdk..',
+      '.kbbbrbbdk..', '..kbbbbdk...', '...kkkkkgk..', '........kgk.', '.........kgk', '..........k.'] },
+    muscleband: { pal: { r: '#ff5f6d', d: '#b8283a', y: '#ffd23f', w: '#ffd8d8' }, rows: [
+      '............', '............', '..kkkkkkkk..', '.krwwrrrrrk.', 'krrrrrrrrrdk', 'kddddyyddddk',
+      'kddddyyddddk', 'krrrrrrrrrdk', '.krrrrrrrdk.', '..kkkkkkkk..', '............', '............'] },
+    wiseglasses: { pal: { g: '#3a3a48', b: '#7fe0ff', w: '#e8fbff' }, rows: [
+      '............', '............', '............', 'kkkkk..kkkkk', 'kbwbbkkkbwbk', 'kbbbbk.kbbbk',
+      'kbbbbk.kbbbk', '.kkkk...kkk.', '............', '............', '............', '............'] },
     leftovers: { pal: { r: '#ff5f6d', d: '#b8283a', w: '#ffd8d8', g: '#5fe08a' }, rows: [
       '.....kgk....', '....kggk....', '..kkkkkkkk..', '.krwrrrrrrk.', 'krwrrrrrrrdk', 'krrrrrrrrrdk',
       'krrrrrrrrrdk', 'krrrrrrrrddk', '.krrrrrrrdk.', '..kdrrrrdk..', '...kkkkkk...', '............'] },

@@ -69,9 +69,11 @@ G.MartUI = (() => {
   const GHOST_PRICE = [0, 40, 70, 120, 200, 400];
   const ghostPrice = d => GHOST_PRICE[Math.max(1, Math.min(5, G.DEX_BY[d].rarity || 1))];
   // Special and regional forms (prices in candy).
-  const FORM_PRICE = { 31150: 700, 31249: 700, 31399: 300, 30901: 400, 30144: 400, 30145: 400, 30146: 400 };
+  const FORM_PRICE = { 31150: 700, 31249: 700, 31399: 300, 30901: 400, 30144: 400, 30145: 400, 30146: 400,
+                       31384: 700, 31646: 700, 31721: 650, 31248: 550, 31149: 550, 31213: 300, 31024: 300 };
   const formPrice = d => FORM_PRICE[d] || (G.FORM_BY[d].form === 'shadow' ? 450 : 220);
-  const TICKETS = [{ id: 't1', n: 1, price: 15, name: 'Gacha ticket ×1' }, { id: 't10', n: 1, price: 120, name: 'Gacha ticket ×10' }];
+  const TICKETS = [{ id: 't1', n: 1, price: 15, name: 'Gacha ticket ×1' }, { id: 't10', n: 1, price: 120, name: 'Gacha ticket ×10' },
+                   { id: 'coins', n: 2000, price: 60, name: '2,000 PokéCoins' }];   // coins for candy: update 40
 
   function hwState() {
     const c = G.Halloween.countdown();
@@ -120,8 +122,10 @@ G.MartUI = (() => {
     }
     h += '</div>';
     // Tickets
-    h += `<h3 style="margin:12px 0 6px">${G.Icons.html('ball4', 18)} Gacha tickets</h3><div class="upg">`;
-    for (const t of TICKETS) h += row(G.Icons.html('ball4', 32), t.name, t.id === 't1' ? 'One pull in the gacha.' : 'Ten pulls at once (the ×10 tickets from bosses).', btn(`data-hticket="${t.id}"`, t.price));
+    h += `<h3 style="margin:12px 0 6px">${G.Icons.html('ball4', 18)} Tickets &amp; coins</h3><div class="upg">`;
+    for (const t of TICKETS) h += row(G.Icons.html(t.id === 'coins' ? 'coin' : 'ball4', 32), t.name,
+      t.id === 't1' ? 'One pull in the gacha.' : t.id === 't10' ? 'Ten pulls at once (the ×10 tickets from bosses).' : 'PokéCoins for the Poké Mart, upgrades and prestige.',
+      btn(`data-hticket="${t.id}"`, t.price));
     h += '</div>';
     // Shiny ghosts you own
     const sg = shinyGhosts();
@@ -162,9 +166,12 @@ G.MartUI = (() => {
     } else if (kind === 'ticket') {
       const t = TICKETS.find(x => x.id === id);
       if (!t || !spendCandy(t.price)) return render();
-      s.tickets = s.tickets || { t1: 0, t10: 0 };
-      s.tickets[t.id] += t.n;
-      msg = '+1 ' + t.name.toLowerCase();
+      if (t.id === 'coins') { s.coins += t.n; msg = '+' + t.n.toLocaleString() + ' PokéCoins'; }
+      else {
+        s.tickets = s.tickets || { t1: 0, t10: 0 };
+        s.tickets[t.id] += t.n;
+        msg = '+1 ' + t.name.toLowerCase();
+      }
     } else if (kind === 'form') {
       const d = +id;
       if (!G.FORM_BY[d] || G.DB.owns(d) || !spendCandy(formPrice(d))) return render();

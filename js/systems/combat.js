@@ -745,11 +745,15 @@ G.Combat = (() => {
     if (a.touchPoison && m && (m.kind === 'melee' || m.kind === 'dash')) e.applyPoison(1);
   }
 
+  /** Muscle Band (close-range moves) and Wise Glasses (ranged moves): ×1.2 (standalone, update 40). */
+  const CLOSE = new Set(['melee', 'spin']);
+  const bandK = (pl, m) => (!pl.hasItem ? 1 : m && CLOSE.has(m.kind) ? (pl.hasItem('muscleband') ? 1.2 : 1) : (pl.hasItem('wiseglasses') ? 1.2 : 1));
+
   /** Arceus (Sentencia) sólo recibe una parte (ver Judgment.dmgK). */
   const arcK = e => (e.arceus ? G.Judgment.dmgK() : 1);
 
   function hit(pl, e, dmg, col, dx, dy, knock, m) {
-    const k = typeK(m.type, e) * G.Stats.taken(e.mon, m.cat) * abilOut(pl, m, e) * arcK(e);
+    const k = typeK(m.type, e) * G.Stats.taken(e.mon, m.cat) * abilOut(pl, m, e) * arcK(e) * bandK(pl, m);
     const crit = isCrit(pl), sk = statusK(pl);
     dmg *= k * (crit ? critMul(pl) : 1);
     e.hurt(dmg, col, dx, dy, sk ? knock : 0, crit ? 'crit' : G.Types.label(G.Types.mult(m.type, e.types)));
@@ -861,7 +865,7 @@ G.Combat = (() => {
         }
 
         const crit = isCrit(pl), sk = statusK(pl);
-        const k = (p.mtype ? typeK(p.mtype, e) : 1) * G.Stats.taken(e.mon, p.mcat) * (crit ? critMul(pl) : 1) * abilOut(pl, p.src, e) * arcK(e);
+        const k = (p.mtype ? typeK(p.mtype, e) : 1) * G.Stats.taken(e.mon, p.mcat) * (crit ? critMul(pl) : 1) * abilOut(pl, p.src, e) * arcK(e) * bandK(pl, p.src);
         e.hurt(p.dmg * k, p.color, p.vx || (e.x - pl.x), p.vy || (e.y - pl.y), sk ? p.knock : 0,
                crit ? 'crit' : p.mtype ? G.Types.label(G.Types.mult(p.mtype, e.types)) : null);
         if (Math.random() < 0.5) G.FX.sp('impact', p.vis ? p.vis.pal : 'normal', e.x, e.y - e.bodyH * 0.5, { life: 0.12, scale: 1 });

@@ -33,18 +33,35 @@ G.Waves = (() => {
     return vb + (vb - va) * (r - rb) / (rb - ra);
   };
   const COUNT = [[1, 20], [5, 36], [10, 55], [20, 85], [25, 100], [40, 130], [60, 175], [100, 260]];
-  const HP = [[1, 1], [10, 1.1], [25, 1.25], [40, 1.6], [60, 2.4], [100, 4.5]];
-  const DMG = [[1, 1], [25, 1.15], [40, 1.4], [60, 1.8], [100, 2.6]];
-  const SPAWN = [[1, 25], [10, 40], [25, 50]];
+  // Update 40 numbers (Doofcraft): a gentler middle, faster arrivals, and its own late game from round 73.
+  const HP = [[1, 1], [10, 1], [15, 0.85], [20, 0.85], [25, 1.05], [40, 1.5], [60, 2.4], [100, 4.5]];
+  const DMG = [[1, 1], [10, 0.95], [15, 0.8], [20, 0.85], [25, 1], [40, 1.35], [60, 1.8], [100, 2.6]];
+  const SPAWN = [[1, 25], [10, 22], [25, 18], [40, 15], [60, 12], [100, 12]];
+  const LATE = 73;
+  const LATE_HP = [[73, 1], [90, 1.45], [110, 2.2], [130, 3.6], [150, 5.5], [175, 9], [200, 15]];
+  const LATE_DMG = [[73, 1], [90, 1.2], [110, 1.7], [130, 2.6], [150, 4], [175, 10], [200, 40]];
+  const LATE_RATE = [[73, 1], [90, 1.1], [110, 1.2], [130, 1.35], [150, 1.5]];
+  const LATE_CAP = [[73, 0], [90, 3], [110, 6], [130, 10], [150, 15]];
+  const hpAt = r => (r < LATE ? curve(HP, r) : curve(HP, LATE) * curve(LATE_HP, Math.min(r, 400)));
+  const dmgAt = r => (r < LATE ? curve(DMG, r) : curve(DMG, LATE) * curve(LATE_DMG, Math.min(r, 400)));
+  // Regular bosses (update 40): from round 10, every 10 rounds (not on Darkrai rounds); 25 % legendary.
+  const REG_BOSS_FROM = 10, REG_BOSS_EVERY = 10;
+  // Greedent Candy Thieves: up to 2 a run.
+  const THIEF_FIRST = [120, 240], THIEF_NEXT = [240, 360], THIEF_LIFE = 15, THIEF_MAX = 2;
+  // Solo, objectives charge twice as fast (update 40).
+  const CHARGE = 0.5;
   const ALIVE_CAP = 45, GRACE = 3, SWARM_EVERY = 4, RIFT_EVERY = 5, BOSS_EVERY = 25;
   const CANDY_RATE = 0.05, GHOST_CANDY = 0.08, BOSS_CANDY = 25;
   const OBJ_TIME = 75, ESCORT_TIME = 120;
-  /** Difficulty time of a round: which Pokémon come and how tough they are underneath. */
-  const tRound = r => 20 + (r - 1) * 42;
+  /** Difficulty time of a round: which Pokémon come and how tough they are underneath (frozen from round 73). */
+  const tRound = r => 20 + (Math.min(r, LATE) - 1) * 42;
+  /** Candy from objectives and doors grows by 1 every 5 rounds (update 40). */
+  const candyGrow = (base, max) => Math.min(max, base + Math.floor(round / 5));
 
   let on = false, round = 1, phase = 'grace', graceT = 0, toSpawn = 0, spawned = 0, acc = 0, spawnDur = 25;
   let bag = null, swarm = false, boss = null, bossNo = 0, bossT = { summon: 6, voidT: 4 };
   let objs = [];
+  let thiefT = 0, thieves = 0, regBoss = null;
 
   // ---------------- rounds ----------------
 
@@ -53,7 +70,8 @@ G.Waves = (() => {
     round = (restore && restore.round) || 1;
     bossNo = (restore && restore.bossNo) || 0;
     phase = 'grace'; graceT = restore ? 2 : 2.5;
-    toSpawn = spawned = 0; acc = 0; boss = null; objs = [];
+    toSpawn = spawned = 0; acc = 0; boss = null; objs = []; regBoss = null;
+    thiefT = G.U.rand(THIEF_FIRST[0], THIEF_FIRST[1]); thieves = 0;
   }
   function stop() { on = false; for (const o of objs) if (o.kind === 'lanterns') for (const l of o.items) l.out = false; objs = []; boss = null; }
 
@@ -83,8 +101,10 @@ G.Waves = (() => {
       spawned = 0; acc = 0;
       bag = makeBag();
       G.Sprites.preload(bag.map(d => d.dex), 6000);
-      G.Spawner.say(swarm ? 'Round ' + round + ': Ghost swarm!' : 'Round ' + round, swarm ? 3 : 2.2);
+      const regular = round >= REG_BOSS_FROM && round % REG_BOSS_EVERY === 0;
+      G.Spawner.say(swarm ? 'Round ' + round + ': Ghost swarm!' : regular ? 'Round ' + round + ': a boss joins the wave!' : 'Round ' + round, swarm || regular ? 3 : 2.2);
       G.Audio.sfx(swarm ? 'surge' : 'biome');
+      if (regular) spawnRegularBoss();
       // Objectives (none on boss rounds), at most 2 going at once.
       const want = round >= 4 ? 2 : 1;
       const kinds = ['cage', 'lanterns', 'escort', 'doors'].filter(k => !objs.some(o => o.kind === k));
@@ -113,13 +133,20 @@ G.Waves = (() => {
   function update(dt, pl) {
     if (!on || !pl || G.Rift.inArena) return;
     updateObjectives(dt, pl);
+    // Greedent Candy Thieves.
+    if (thieves < THIEF_MAX && (thiefT -= dt) <= 0) {
+      if (phase === 'boss') thiefT = 8;
+      else { spawnThief(pl); thieves++; thiefT = G.U.rand(THIEF_NEXT[0], THIEF_NEXT[1]); }
+    }
+    if (regBoss && regBoss.dead) { bossReward(regBoss); regBoss = null; }
     if (phase === 'grace') {
       if ((graceT -= dt) <= 0) beginRound();
     } else if (phase === 'spawn') {
-      acc += toSpawn / spawnDur * dt;
-      const t = tRound(round), hp = curve(HP, round) * (swarm ? 0.3 : 1), dmg = curve(DMG, round) * (swarm ? 0.6 : 1);
+      acc += toSpawn / spawnDur * dt * (round >= LATE ? curve(LATE_RATE, round) : 1);
+      const t = tRound(round), hp = hpAt(round) * (swarm ? 0.3 : 1), dmg = dmgAt(round) * (swarm ? 0.6 : 1);
+      const cap = ALIVE_CAP + (round >= LATE ? Math.round(curve(LATE_CAP, Math.min(round, 150))) : 0);
       while (acc >= 1 && spawned < toSpawn) {
-        if (alive().length >= ALIVE_CAP) { acc = Math.min(acc, 1); break; }
+        if (alive().length >= cap) { acc = Math.min(acc, 1); break; }
         acc -= 1;
         const e = G.Spawner.spawnCustom(t, { bag, hpMul: hp, dmgMul: dmg, spdMul: swarm ? 1.45 : 1 });
         if (e) { e.waveR = round; spawned++; } else break;
@@ -137,6 +164,64 @@ G.Waves = (() => {
         for (const e of alive()) if (!e.dead) e.hurt(e.hp + 1, '#9b6bff');
         clearRound();
       }
+    }
+  }
+
+  // ---------------- regular bosses and Candy Thieves (update 40) ----------------
+
+  function spawnRegularBoss(kind) {
+    const pl = G.Game.player, t = tRound(round);
+    const k = 1 + (round / REG_BOSS_EVERY - 1) * 0.6;
+    let e = null;
+    if (Math.random() < 0.25) {
+      // A legendary: one with a sprite, at the round's strength.
+      const legs = G.DEX.filter(p => p.leg && G.SPRITE_META[p.dex]);
+      if (legs.length) {
+        const mon = G.U.pick(legs);
+        const def = { dex: mon.dex, name: mon.name, hp: Math.round(10000 * k), spd: 70, dmg: Math.round(42 * Math.sqrt(k)), xp: 1400, behavior: 'chase' };
+        const [x, y] = G.Spawner.ringPoint(pl, Math.random() * 6.2832);
+        e = new G.Enemy(def, x, y, { hp: (1 + t / 600) * hpAt(round), dmg: (1 + t / 1200) * dmgAt(round), spd: 1 }, true);
+        e.legendBoss = true;
+        G.EnemyMgr.add(e);
+        G.Sprites.preload([mon.dex], 4000);
+        G.Camera.kick(1.2); G.Audio.sfx('boss');
+      }
+    }
+    if (!e) e = G.Spawner.spawnBossNow(k * hpAt(round));
+    if (!e) return null;
+    e.waveR = round;
+    if (!kind) regBoss = e;
+    else e.trickBoss = true;
+    G.Spawner.say((e.legendBoss ? 'A legendary ' : 'A wild ') + e.name + ' joined the wave!', 2.8, true);
+    return e;
+  }
+
+  /** Regular boss rewards: candy 60 %, tickets 30 %, a ×10 ticket 10 %. */
+  function bossReward(e) {
+    const r = Math.random();
+    if (r < 0.6) { const n = G.U.randInt ? G.U.randInt(5, 10) : 5 + Math.floor(Math.random() * 6); G.Pickups.drop('candy', e.x, e.y - 10, n); G.Spawner.say('Boss defeated! +' + n + ' candy', 2.6, true); }
+    else if (r < 0.9) { for (let i = 0; i < 3; i++) G.Pickups.drop('ticket', e.x + (i - 1) * 16, e.y - 12, 1); G.Spawner.say('Boss defeated! 3 gacha tickets', 2.6, true); }
+    else { G.Pickups.drop('ticket10', e.x, e.y - 12, 1); G.Spawner.say('Boss defeated! A ×10 ticket', 2.6, true); }
+  }
+
+  function spawnThief(pl) {
+    const dex = 820, mon = G.DEX_BY[dex];
+    if (!mon || !G.SPRITE_META[dex]) return;
+    G.Sprites.preload([dex]);
+    const t = tRound(round);
+    const def = { dex, name: 'Candy Thief Greedent', behavior: 'thief', hp: Math.round(60 * (1 + t / 95)), spd: 92, dmg: 0, xp: 10,
+                  loot: 'candy', candy: 5 + Math.floor(Math.random() * 6) };
+    for (let i = 0; i < 12; i++) {
+      const a = Math.random() * 6.2832, d = G.U.rand(230, 300);
+      const x = pl.x + Math.cos(a) * d, y = pl.y + Math.sin(a) * d * 0.8;
+      if (!G.World.isFree(x, y, 14)) continue;
+      const e = new G.Enemy(def, x, y, { hp: 1, spd: 1, dmg: 1 });
+      e.life = THIEF_LIFE; e.name = 'Candy Thief';
+      G.EnemyMgr.add(e);
+      G.FX.ring(x, y, 4, 40, '#ff9a3c', 0.5, 3);
+      G.Spawner.say('A Greedent Candy Thief! Catch it before it runs off', 3.2);
+      G.Audio.sfx('shiny');
+      return;
     }
   }
 
@@ -288,12 +373,12 @@ G.Waves = (() => {
               for (let i = 0; i < 4; i++) {
                 const a = Math.random() * 6.2832;
                 const e = G.Spawner.spawnCustom(tRound(round), { bag: bag || undefined, at: [c.x + Math.cos(a) * 140, c.y + Math.sin(a) * 110],
-                                                                  hpMul: curve(HP, round), dmgMul: curve(DMG, round) });
+                                                                  hpMul: hpAt(round), dmgMul: dmgAt(round) });
                 if (e) e.waveR = round;
               }
               G.Spawner.say('Ambush!', 1.6, true); G.Audio.sfx('surge');
             }
-            c.prog += dt / 6;
+            c.prog += dt / (6 * CHARGE);
           } else c.prog = Math.max(0, c.prog - 0.12 * dt);
           if (c.prog >= 1) {
             c.done = true;
@@ -306,7 +391,7 @@ G.Waves = (() => {
       } else if (o.kind === 'lanterns') {
         for (const l of o.items) {
           if (l.done) continue;
-          if (near(pl, l, 48)) l.prog += dt / 1.5; else l.prog = Math.max(0, l.prog - 0.6 * dt);
+          if (near(pl, l, 48)) l.prog += dt / (1.5 * CHARGE); else l.prog = Math.max(0, l.prog - 0.6 * dt);
           if (l.prog >= 1) {
             l.done = true; l.out = false; G.Audio.sfx('select');
             G.FX.burst(l.x, l.y - 30, '#ffb347', 12, 90);
@@ -335,7 +420,7 @@ G.Waves = (() => {
       } else if (o.kind === 'doors') {
         for (const dr of o.items) {
           if (dr.done) continue;
-          if (near(pl, dr, 44)) dr.prog += dt; else dr.prog = Math.max(0, dr.prog - dt);
+          if (near(pl, dr, 44)) dr.prog += dt / CHARGE; else dr.prog = Math.max(0, dr.prog - dt);
           if (dr.prog >= 1) knock(dr, pl);
         }
         if (o.items.every(dr => dr.done)) complete(o, pl);
@@ -351,36 +436,46 @@ G.Waves = (() => {
     dr.done = true;
     G.Audio.sfx('select');
     if (Math.random() < 0.6) {
+      // Treats (update 40): a buff 38 %, candy 33 %, a chest 24 %, a ×10 ticket 5 %.
       const r = Math.random();
-      if (r < 0.4) {
+      if (r < 0.38) {
         const pw = G.U.pick(G.Interact.POWERS);
         pl.addPower(pw, 15);
         const EN = { dmg: 'Fury: double damage', spd: 'Bolt: +45% speed', mag: 'Magnet: pulls everything in', cd: 'Haste: -40% cooldowns' };
         dr.res = 'treat'; G.Spawner.say('Treat! ' + (EN[pw.id] || pw.name) + ' for 15 s', 2.6, true);
         G.FX.ring(pl.x, pl.y, 8, 90, pw.color, 0.5, 4);
-      } else if (r < 0.75) {
-        G.Pickups.drop('candy', dr.x, dr.y + 10, 3);
-        dr.res = 'treat'; G.Spawner.say('Treat! 3 candy', 2.2, true);
-      } else {
+      } else if (r < 0.71) {
+        const n = candyGrow(3, 6);
+        G.Pickups.drop('candy', dr.x, dr.y + 10, n);
+        dr.res = 'treat'; G.Spawner.say('Treat! ' + n + ' candy', 2.2, true);
+      } else if (r < 0.95) {
         for (let i = 0; i < 8; i++) G.Pickups.drop('coin', dr.x + G.U.rand(-26, 26), dr.y + G.U.rand(4, 24), 3);
         G.Pickups.dropXp(dr.x, dr.y + 12, Math.round(G.Game.levelXp() * 0.4));
         dr.res = 'treat'; G.Spawner.say('Treat! A chest of goodies', 2.2, true);
+      } else {
+        G.Pickups.drop('ticket10', dr.x, dr.y + 10, 1);
+        dr.res = 'treat'; G.Spawner.say('Treat! A ×10 gacha ticket!', 2.6, true);
       }
       G.Audio.sfx('coin');
     } else {
+      // Tricks (update 40): an ambush 50 %, slowed 35 %, a boss 15 %.
       dr.res = 'trick';
-      if (Math.random() < 0.6) {
+      const r = Math.random();
+      if (r < 0.5) {
         for (let i = 0; i < 4; i++) {
           const a = Math.random() * 6.2832;
           const e = G.Spawner.spawnCustom(tRound(round), { bag: bag || undefined, at: [dr.x + Math.cos(a) * 90, dr.y + 20 + Math.sin(a) * 60],
-                                                            hpMul: curve(HP, round), dmgMul: curve(DMG, round) });
+                                                            hpMul: hpAt(round), dmgMul: dmgAt(round) });
           if (e) e.waveR = round;
         }
         G.Spawner.say('Trick! It was an ambush', 2.2, true); G.Audio.sfx('surge');
-      } else {
+      } else if (r < 0.85) {
         pl.slowT = 5;
         G.Spawner.say('Trick! You are slowed for 5 s', 2.2, true);
         G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, '#8bd94a', 14, 100);
+      } else {
+        G.Spawner.say('Trick! Something big was behind the door…', 2.6, true);
+        spawnRegularBoss('trick');
       }
     }
   }
@@ -394,7 +489,7 @@ G.Waves = (() => {
       G.Pickups.dropXp(pl.x, pl.y - 20, Math.round(G.Game.levelXp() * 0.5));
       if (Math.random() < 0.3) G.Pickups.drop('item', pl.x + 28, pl.y - 6, G.Items.roll());
       msg = 'a chest of goodies';
-    } else if (r < 0.8) { G.Pickups.drop('candy', pl.x, pl.y - 16, 5); msg = '5 candy'; }
+    } else if (r < 0.8) { const n = candyGrow(5, 10); G.Pickups.drop('candy', pl.x, pl.y - 16, n); msg = n + ' candy'; }
     else { for (let i = 0; i < 3; i++) G.Pickups.drop('ticket', pl.x + (i - 1) * 16, pl.y - 18, 1); msg = '3 gacha tickets'; }
     G.Spawner.say('Objective complete! ' + msg, 3, true);
     G.Audio.sfx('legend');

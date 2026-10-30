@@ -1280,3 +1280,9 @@ body.skin .menu-item:not(.play) { font-size: 10.5px; padding: 5px 3px; grid-temp
 body.skin .menu-item:not(.play) .mi-ico canvas, body.skin .menu-item:not(.play) .mi-ico img, body.skin .menu-item:not(.play) .mi-ico svg { width: 16px !important; height: 16px !important; }
 body.fullp .menu-item:not(.play) { font-size: 12.5px; padding: 7px 4px; grid-template-columns: 18px 1fr; column-gap: 4px; letter-spacing: 0; line-height: 1.15; }
 body.fullp .menu-item:not(.play) .mi-ico canvas, body.fullp .menu-item:not(.play) .mi-ico img, body.fullp .menu-item:not(.play) .mi-ico svg { width: 18px !important; height: 18px !important; }
+
+/* Standalone (update 40): difficulty picker on the Play screen */
+.modes-diff { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+.modes-diff-l { font-weight: 800; margin-right: auto; }
+.modes-diff .btn.on { background: var(--gold); color: #1a1426; }
+.modes-diff-info { margin: 4px 0 0; min-height: 1.2em; }

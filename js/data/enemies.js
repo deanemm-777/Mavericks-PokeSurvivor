@@ -180,7 +180,12 @@ G.Enemies = (() => {
   // (El "tiempo extra" del minuto 60 se quitó al llegar la Sentencia de Arceus,
   //  que acaba todas las partidas en el minuto 30: ver systems/judgment.js.)
   function scale(t) {
-    return { hp: 1 + t / 95, dmg: 1 + t / 420, spd: 1 + Math.min(0.35, t / 1400) };
+    // Standalone (update 40): after 20 minutes wild Pokémon get more dangerous rather
+    // than tankier (health grows half as fast, damage 60 % faster); not in Halloween Waves,
+    // which has its own late game. Difficulty (modes.js) scales health and speed.
+    const late = !(G.Modes && G.Modes.waves) && t > 1200 ? t - 1200 : 0;
+    const d = (G.Modes && G.Modes.diff) || { hp: 1, spd: 1 };
+    return { hp: (1 + (t - late * 0.5) / 95) * d.hp, dmg: 1 + (t + late * 0.6) / 420, spd: (1 + Math.min(0.35, t / 1400)) * d.spd };
   }
 
   /**

@@ -122,6 +122,16 @@ G.Player = class Player {
     const slow = this.inLiquid && !ab.steady ? G.World.liquidEffect(this.mon.types).slow || 1 : 1;
     return G.Judgment && G.Judgment.active ? G.Judgment.capSpd(s * slow * w) : s * slow * w;
   }
+  /**
+   * Standalone (update 40): Defence from size. Large Pokémon shrug off more:
+   * +1 % toughness per 0.28 px of body radius above 14, up to +100 % (half damage).
+   * Shown as a 0-100 Defence stat (with the Pokémon's own Defence) in the stats panel.
+   */
+  get sizeToughness() { return G.U.clamp((this.r - 14.08) / 28, 0, 1); }
+  get defenceStat() {
+    const m = this.mon || {}, base = ((m.df || 50) + (m.sd || 50)) / 2;
+    return Math.round(G.U.clamp(base / 230 * 60 + this.sizeToughness * 40, 0, 100));
+  }
   get reduction() { return Math.min(0.8, this.dmgReduce + this.itemReduce + this.buffs.def.n * this.buffs.def.amount); }
   get regen() { return this.regenFlat + this.buffs.regen.n * this.buffs.regen.amount; }
 
@@ -284,7 +294,7 @@ G.Player = class Player {
     // Con un ataque cuerpo a cuerpo activo se recibe un 25 % menos: hay que
     // estar encima de los enemigos para pegar (iban muy por detrás).
     const close = this.activeGroup().some(m => m.kind === 'melee') ? 0.75 : 1;
-    const d = pure ? Math.max(1, amount) : Math.max(1, amount * (1 - this.reduction) * close);
+    const d = pure ? Math.max(1, amount) : Math.max(1, amount * (1 - this.reduction) * close / (1 + this.sizeToughness));
     this.hp -= d;
     this.invuln = 0.45;
     this.flash = 0.14;
