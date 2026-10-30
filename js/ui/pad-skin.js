@@ -104,7 +104,34 @@ G.PadSkin = (() => {
     if (lv > best && lv - H < 130) best = lv;
     return best;
   }
+  /*
+   * iOS 26 home-screen apps (black-translucent status bar) get a viewport that
+   * stops a status bar's height short of the bottom, but only while the page is
+   * shorter than the screen. Make the page as tall as the screen so iOS hands
+   * over the whole thing; if it doesn't (other iOS versions), undo it so nothing scrolls.
+   */
+  let stretch = null;     // null: not tried, 'on': page made tall, 'off': didn't help
+  function fullViewport() {
+    const standalone = navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches);
+    if (!standalone || stretch === 'off' || !window.screen) return;
+    const sw = Math.min(screen.width, screen.height), sh = Math.max(screen.width, screen.height);
+    if (innerWidth > innerHeight || Math.abs(sw - innerWidth) > 2) return;     // portrait only
+    if (stretch === null && sh - innerHeight > 1 && sh - innerHeight < 130) {
+      stretch = 'on';
+      document.documentElement.style.minHeight = sh + 'px';
+      setTimeout(() => {
+        if (innerHeight < sh - 1) {
+          stretch = 'off';
+          document.documentElement.style.minHeight = '';
+        }
+        scrollTo(0, 0);
+        layout();
+      }, 700);
+    }
+  }
+
   function fixHeight() {
+    fullViewport();
     const H = appHeight(), fix = H !== innerHeight;
     document.documentElement.style.setProperty('--app-h', H + 'px');
     document.body.classList.toggle('vhfix', fix);
@@ -138,7 +165,7 @@ G.PadSkin = (() => {
     const sa = G.Touch && G.Touch.safeArea ? G.Touch.safeArea() : { top: 0, bottom: 0 };
     const sh = window.screen ? Math.max(screen.width, screen.height) : 0;
     const lv = probe ? probe.offsetHeight : 0;
-    tag.textContent = tag.dataset.build + ' · ' + innerWidth + '×' + innerHeight + ' s' + sh + (lv ? ' l' + lv : '') + ' h' + H + ' ' + Math.round(sa.top) + '/' + Math.round(sa.bottom);
+    tag.textContent = tag.dataset.build + ' · ' + (stretch ? stretch + ' ' : '') + innerWidth + '×' + innerHeight + ' s' + sh + (lv ? ' l' + lv : '') + ' h' + H + ' ' + Math.round(sa.top) + '/' + Math.round(sa.bottom);
   }
 
   function layout() {
