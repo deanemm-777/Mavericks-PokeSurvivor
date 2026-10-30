@@ -17,7 +17,8 @@ G.Modes = (() => {
   const LIST = [
     { id: 'normal',  name: 'Classic',  desc: 'Survive until Arceus\'s Judgment at 30:00.' },
     { id: 'fast',    name: 'Fast',     desc: 'Everything scales twice as fast. Arceus comes at 15:00. ×1.5 coins.' },
-    { id: 'endless', name: 'Endless',  desc: 'No Judgment. Clear rounds for bonus picks, a legendary rift every 5 rounds and a boss every 25.' }
+    { id: 'endless', name: 'Endless',  desc: 'No Judgment. Clear rounds for bonus picks, a legendary rift every 5 rounds and a boss every 25.' },
+    { id: 'waves',   name: 'Halloween Waves', desc: 'The Haunted Hollow at night. Defeat each round\'s Pokémon, ghost swarms every 4, Mega Darkrai every 25, and spooky objectives for candy.' }
   ];
   const BY = {};
   for (const m of LIST) BY[m.id] = m;
@@ -32,11 +33,12 @@ G.Modes = (() => {
     mode = BY[id] ? id : 'normal';
     round = 1; roundKills = 0; killsAtStart = 0; bossNo = 0; clearT = 0;
     if (restore) { round = restore.round || 1; roundKills = restore.roundKills || 0; bossNo = restore.bossNo || 0; }
-    if (G.Rift.setAuto) G.Rift.setAuto(mode !== 'endless');
+    if (G.Rift.setAuto) G.Rift.setAuto(mode !== 'endless' && mode !== 'waves');
+    if (mode === 'waves') G.Waves.start(restore && restore.waves); else G.Waves.stop();
   }
 
   /** Difficulty time: Fast runs the clock at double speed. */
-  function ft(time) { return mode === 'fast' ? time * 2 : time; }
+  function ft(time) { return mode === 'fast' ? time * 2 : mode === 'waves' ? G.Waves.ft() : time; }
 
   /** Endless: count defeats toward the round (game.js passes the player's total kills). */
   function tick(dt, pl) {
@@ -72,11 +74,14 @@ G.Modes = (() => {
     get id() { return mode; },
     get name() { return BY[mode].name; },
     get endless() { return mode === 'endless'; },
+    get waves() { return mode === 'waves'; },
+    /** Modes without Arceus's Judgment. */
+    get noJudgment() { return mode === 'endless' || mode === 'waves'; },
     get fast() { return mode === 'fast'; },
     get coinMul() { return mode === 'fast' ? 1.5 : 1; },
-    get round() { return round; },
+    get round() { return mode === 'waves' ? G.Waves.round : round; },
     get roundKills() { return roundKills; },
     get clearT() { return clearT; },
-    state() { return { round, roundKills, bossNo }; }
+    state() { return mode === 'waves' ? { waves: G.Waves.state() } : { round, roundKills, bossNo }; }
   };
 })();

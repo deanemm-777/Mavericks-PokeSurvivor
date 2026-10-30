@@ -67,6 +67,52 @@ G.HUD = (() => {
     }
   }
 
+  /** Standalone build: Halloween Waves round line, objectives and arrows to them (systems/waves.js). */
+  function drawWaves(ctx, w, h, pl, oy, sa) {
+    const W = G.Waves;
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = F(800, 11);
+    const ph = W.phase;
+    const line = ph === 'grace' ? 'ROUND ' + W.round + ' COMING…' : ph === 'boss' ? 'ROUND ' + W.round + '  ·  MEGA DARKRAI'
+               : 'ROUND ' + W.round + (W.swarm ? '  ·  GHOST SWARM' : '') + '  ·  ' + W.left + ' LEFT';
+    // Under the boss health bar when a boss is out.
+    const y0 = (G.EnemyMgr.all().some(e => e.boss && !e.dead) ? 100 : 74) + oy;
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.6)';
+    G.I18n.rawCanvas(ctx, 'strokeText', line, w / 2, y0);
+    ctx.fillStyle = ph === 'boss' ? '#c77dff' : W.swarm ? '#b6f0ff' : '#ff9a3c';
+    G.I18n.rawCanvas(ctx, 'fillText', line, w / 2, y0);
+    // Objectives, under the round line.
+    let y = y0 + 18;
+    ctx.font = F(700, 10);
+    for (const o of W.objectives) {
+      const txt = o.status === 'done' ? 'Objective complete!' : o.status === 'failed' ? 'Objective failed' : o.title() + '  ' + Math.max(0, Math.ceil(o.t)) + 's';
+      ctx.globalAlpha = o.status ? Math.max(0, 1 - (o.fade || 0) / 2.5) : 1;
+      ctx.strokeText(txt, w / 2, y);
+      ctx.fillStyle = o.status === 'done' ? '#7dff9a' : o.status === 'failed' ? '#ff6b6b' : o.t < 15 ? '#ffd23f' : '#f3e6ff';
+      G.I18n.rawCanvas(ctx, 'fillText', txt, w / 2, y);
+      y += 14;
+    }
+    ctx.globalAlpha = 1;
+    // Arrows at the screen edge pointing to objectives off screen.
+    const cam = G.Camera, k = cam.scale, t = performance.now() / 1000;
+    for (const tg of W.targets()) {
+      const sx = (tg.x - cam.left()) * k, sy = (tg.y - 20 - cam.top()) * k;
+      const m = 26;
+      if (sx > m && sx < w - m && sy > m + 60 && sy < h - m - 60) continue;
+      const cx = w / 2, cy = h / 2, a = Math.atan2(sy - cy, sx - cx);
+      const ex = Math.max(m + sa.left, Math.min(w - m - sa.right, sx)), ey = Math.max(m + 70 + sa.top, Math.min(h - m - 90, sy));
+      const bob = Math.sin(t * 6) * 2;
+      ctx.save();
+      ctx.translate(ex + Math.cos(a) * bob, ey + Math.sin(a) * bob); ctx.rotate(a);
+      ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(-6, -8); ctx.lineTo(-2, 0); ctx.lineTo(-6, 8); ctx.closePath();
+      ctx.fillStyle = '#ff9a3c'; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.stroke();
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
   /** Standalone build: Endless round counter, Mega Evolution and Z-move buttons (systems/modes.js, mega.js). */
   function drawExtras(ctx, w, h, pl, oy, sa, touch) {
     if (G.Modes.endless) {
@@ -77,6 +123,7 @@ G.HUD = (() => {
       G.I18n.rawCanvas(ctx, 'fillText', 'ROUND ' + G.Modes.round + '  ·  ' + Math.min(k, q) + ' / ' + q, w / 2, 74 + oy);
       bar(ctx, w / 2 - 60, 79 + oy, 120, 5, Math.min(1, k / q), '#ffd23f');
     }
+    if (G.Waves.on) drawWaves(ctx, w, h, pl, oy, sa);
     // Z-move name across the screen when it is unleashed.
     const z = G.Mega.zFx;
     if (z) {

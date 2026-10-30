@@ -565,17 +565,7 @@ G.Player = class Player {
     }
     G.Sprites.drawShadow(ctx, this.dex, this.x, this.y, this.scale);
     if (G.Mega && this.mega) G.Mega.drawAura(ctx, this);     // standalone: Mega Evolution
-    if (this.mon.form === 'shadow' && !this.dead) {             // standalone: Shadow Pokémon aura
-      const t = performance.now() / 1000;
-      ctx.save();
-      for (let i = 0; i < 2; i++) {
-        ctx.globalAlpha = 0.28 + Math.sin(t * 3 + i * 2) * 0.1;
-        ctx.fillStyle = i ? '#5a1f8a' : '#2a0f45';
-        const r = this.r * (2.1 - i * 0.5) + Math.sin(t * 2.4 + i) * 1.5;
-        ctx.beginPath(); ctx.ellipse(this.x, this.y, r, r * 0.42, 0, 0, 6.2832); ctx.fill();
-      }
-      ctx.restore();
-    }
+    if (this.mon.form === 'shadow' && !this.dead) G.drawShadowAura(ctx, this.x, this.y, this.r, this.bodyH, true);   // standalone: Shadow flames
     // Poder de altar: aro de su color latiendo bajo los pies.
     if (this.power && !this.dead) {
       ctx.save();
@@ -587,6 +577,7 @@ G.Player = class Player {
 
     const alpha = this.invuln > 0 && !this.dead ? (Math.floor(this.invuln * 18) % 2 ? 0.45 : 1) : 1;
     this.anim.draw(ctx, this.x, this.y, { flash: this.flash > 0, softFlash: true, alpha, color: '#ffcb3d' });
+    if (this.mon.form === 'shadow' && !this.dead) G.drawShadowAura(ctx, this.x, this.y, this.r, this.bodyH, false);
 
     // Arcos de buff alrededor de los pies.
     const COL = { atk: '#ff6b4d', patk: '#ff6b4d', satk: '#c47bff', spd: '#7fe0ff', def: '#b0b8c8', regen: '#5fe08a' };

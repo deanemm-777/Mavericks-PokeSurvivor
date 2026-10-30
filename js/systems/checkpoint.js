@@ -85,7 +85,7 @@ G.Checkpoint = (() => {
     if (!snap) return '';
     const mode = (G.Modes.BY[snap.mode] || G.Modes.BY.normal).name;
     const mon = G.DEX_BY[snap.dex];
-    const round = snap.mode === 'endless' && snap.ms ? ' · Round ' + snap.ms.round : '';
+    const round = snap.mode === 'endless' && snap.ms ? ' · Round ' + snap.ms.round : snap.mode === 'waves' && snap.ms && snap.ms.waves ? ' · Round ' + snap.ms.waves.round : '';
     return `${mon ? mon.name : '?'} · ${mode} · ${G.U.mmss(snap.time)} · Lv ${snap.p.level || 1}${round}`;
   }
 

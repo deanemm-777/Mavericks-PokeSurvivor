@@ -623,21 +623,27 @@ G.World = (() => {
    * una vela. (x, y) de pantalla = (mundo - esquina de la cámara) * escala.
    */
   let night = null;
-  function drawNight(ctx, w, h, cam, t) {
+  /** @param more  standalone: extra lights in world coords [{ x, y, r, col? }] (Halloween Waves). */
+  function drawNight(ctx, w, h, cam, t, more = null) {
     const W = Math.ceil(w), Hh = Math.ceil(h), k = cam.scale;
     if (!night) night = document.createElement('canvas');
     if (night.width !== W || night.height !== Hh) { night.width = W; night.height = Hh; }
     const n = night.getContext('2d');
     n.globalCompositeOperation = 'source-over';
     n.clearRect(0, 0, W, Hh);
-    n.fillStyle = 'rgba(8,4,24,0.64)';
+    n.fillStyle = more ? 'rgba(8,4,26,0.7)' : 'rgba(8,4,24,0.64)';
     n.fillRect(0, 0, W, Hh);
     const lights = visibleProps(cam).filter(p => p.type === 'pumpkin').map(p => ({
-      x: (p.x - cam.left()) * k, y: (p.y - 14 - cam.top()) * k,
-      f: 1 + Math.sin(t * 7 + p.wiggle) * 0.05 + Math.sin(t * 13 + p.wiggle * 2) * 0.03 }));
+      x: (p.x - cam.left()) * k, y: (p.y - 14 - cam.top()) * k, r: 110,
+      f: 1 + Math.sin(t * 7 + p.wiggle) * 0.05 + Math.sin(t * 13 + p.wiggle * 2) * 0.03, col: 'rgba(255,138,42,.32)' }));
+    for (const m of more || []) {
+      const x = (m.x - cam.left()) * k, y = (m.y - cam.top()) * k, R = m.r * k;
+      if (x < -R || y < -R || x > W + R || y > Hh + R) continue;
+      lights.push({ x, y, r: m.r, f: 1 + Math.sin(t * 5 + m.x) * 0.03, col: m.col || null });
+    }
     n.globalCompositeOperation = 'destination-out';
     for (const l of lights) {
-      const r = 110 * k * l.f, g = n.createRadialGradient(l.x, l.y, 0, l.x, l.y, r);
+      const r = l.r * k * l.f, g = n.createRadialGradient(l.x, l.y, 0, l.x, l.y, r);
       g.addColorStop(0, 'rgba(0,0,0,.95)'); g.addColorStop(0.45, 'rgba(0,0,0,.6)'); g.addColorStop(1, 'rgba(0,0,0,0)');
       n.fillStyle = g; n.fillRect(l.x - r, l.y - r, r * 2, r * 2);
     }
@@ -645,8 +651,9 @@ G.World = (() => {
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     for (const l of lights) {
-      const r = 70 * k * l.f, g = ctx.createRadialGradient(l.x, l.y, 0, l.x, l.y, r);
-      g.addColorStop(0, 'rgba(255,138,42,.32)'); g.addColorStop(1, 'rgba(255,138,42,0)');
+      if (!l.col) continue;
+      const r = l.r * 0.64 * k * l.f, g = ctx.createRadialGradient(l.x, l.y, 0, l.x, l.y, r);
+      g.addColorStop(0, l.col); g.addColorStop(1, 'rgba(255,138,42,0)');
       ctx.fillStyle = g; ctx.fillRect(l.x - r, l.y - r, r * 2, r * 2);
     }
     ctx.restore();

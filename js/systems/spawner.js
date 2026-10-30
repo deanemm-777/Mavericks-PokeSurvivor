@@ -96,8 +96,8 @@ G.Spawner = (() => {
     return full;
   }
 
-  function spawnOne(pl, t, angle) {
-    const bag = G.Enemies.bagAt(t);
+  function spawnOne(pl, t, angle, bagOverride) {
+    const bag = bagOverride && bagOverride.length ? bagOverride : G.Enemies.bagAt(t);
     let def = G.U.pick(bag);
     if (SUPPORT.has(def.behavior)) {
       const full = supportFull();
@@ -208,6 +208,30 @@ G.Spawner = (() => {
   /** Invitado en cooperativo: sólo corre el reloj del aviso. */
   function tickBanner(dt) { if (announceT > 0) announceT -= dt; }
 
+  /**
+   * Standalone (Halloween Waves, systems/waves.js): one Pokémon from `o.bag` (or the
+   * usual bag) at difficulty time t, with stat multipliers. → the enemy or null.
+   */
+  function spawnCustom(t, o = {}) {
+    players = G.Game.everyone();
+    const pl = o.near || anchor() || G.Game.player;
+    if (!pl) return null;
+    const e = o.at ? null : spawnOne(pl, t, o.angle, o.bag);
+    let en = e;
+    if (o.at) {
+      const def = G.U.pick(o.bag && o.bag.length ? o.bag : G.Enemies.bagAt(t));
+      en = new G.Enemy(def, o.at[0], o.at[1], scaled(G.Enemies.scale(t), hpK(t)));
+      en.dmg *= DMG_K; en.xp = Math.round(en.xp * XP_K);
+      G.EnemyMgr.add(en);
+    }
+    if (!en) return null;
+    if (o.hpMul) en.maxHp = en.hp = Math.max(1, Math.round(en.maxHp * o.hpMul));
+    if (o.dmgMul) en.dmg *= o.dmgMul;
+    if (o.spdMul) en.spd *= o.spdMul;
+    if (o.xpMul) en.xp = Math.round(en.xp * o.xpMul);
+    return en;
+  }
+
   /** Continuing a saved run: bosses whose minute has passed don't all appear at once. */
   function fastForward(t) {
     bossIdx = 0;
@@ -232,6 +256,6 @@ G.Spawner = (() => {
     return e;
   }
 
-  return { reset, update, ahead, burst, outR, tickBanner, banner, say, rate, SHINY_RATE, CAP, fastForward, spawnBossNow,
+  return { reset, update, ahead, burst, outR, tickBanner, banner, say, rate, SHINY_RATE, CAP, fastForward, spawnBossNow, spawnCustom, ringPoint,
            debugForceShiny(n = 1) { forceShiny = n; } };
 })();

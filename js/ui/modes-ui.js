@@ -1,13 +1,13 @@
 /* ============ modes-ui.js — Play: choose a mode or continue a saved run (standalone build) ============ */
 G.ModesUI = (() => {
   const $ = G.UI.$;
-  const ICON = { normal: 'ball', fast: 'boot', endless: 'clock' };
+  const ICON = { normal: 'ball', fast: 'boot', endless: 'clock', waves: 'candy' };
 
   function record(id) {
     const st = (G.DB.save && G.DB.save.stats) || {};
     const m = (st.modes || {})[id] || {};
     if (id === 'normal') return st.bestTime ? 'Best ' + G.U.mmss(st.bestTime) : 'No runs yet';
-    if (id === 'endless') return m.round ? 'Best round ' + m.round + ' · ' + G.U.mmss(m.best || 0) : 'No runs yet';
+    if (id === 'endless' || id === 'waves') return m.round ? 'Best round ' + m.round + ' · ' + G.U.mmss(m.best || 0) : 'No runs yet';
     return m.best ? 'Best ' + G.U.mmss(m.best) : 'No runs yet';
   }
 

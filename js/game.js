@@ -164,7 +164,8 @@ G.Game = (() => {
     const snap = opt.restore || null;
     holdBy = []; awayBy = null;
     // Halloween (systems/halloween.js): lo que sea al empezar vale toda la partida (en grupo, lo dice el anfitrión).
-    G.Halloween.runStart(coop ? coop.hw : undefined);
+    // Standalone: Halloween Waves is always on the Halloween maps, with candy.
+    G.Halloween.runStart(coop ? coop.hw : (snap ? snap.mode : opt.mode) === 'waves' ? true : undefined);
     const save = G.DB.save;
     if (snap && G.DEX_BY[snap.dex]) save.partner = snap.dex;
     // Con su naturaleza aplicada (una copia: ver systems/mons.js).
@@ -243,7 +244,7 @@ G.Game = (() => {
     deathT = 0;
 
     state = 'playing';
-    if (snap) G.Spawner.say('Run continued: ' + G.U.mmss(time) + (G.Modes.endless ? ' · Round ' + G.Modes.round : ''), 3, true);
+    if (snap) G.Spawner.say('Run continued: ' + G.U.mmss(time) + (G.Modes.endless || G.Modes.waves ? ' · Round ' + G.Modes.round : ''), 3, true);
     else if (G.Modes.id !== 'normal') G.Spawner.say(G.Modes.name + ' mode', 2.4, true);
   }
 
@@ -462,7 +463,7 @@ G.Game = (() => {
     const mrec = save.stats.modes[G.Modes.id] = save.stats.modes[G.Modes.id] || { best: 0, round: 0, runs: 0 };
     const record = time > (G.Modes.id === 'normal' ? save.stats.bestTime : mrec.best);
     mrec.best = Math.max(mrec.best || 0, Math.floor(time)); mrec.runs = (mrec.runs || 0) + 1;
-    if (G.Modes.endless) mrec.round = Math.max(mrec.round || 0, G.Modes.round);
+    if (G.Modes.endless || G.Modes.waves) mrec.round = Math.max(mrec.round || 0, G.Modes.round);
     G.Checkpoint.clear();
 
     save.coins += coins;
@@ -500,7 +501,7 @@ G.Game = (() => {
       moves: pl.moves, caught,
       breakdown: Object.entries(parts).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(' · ') +
                  (mul > 1 ? ` · ×${mul.toFixed(2)} Fortuna` : '') + (G.Modes.coinMul > 1 ? ` · ×${G.Modes.coinMul} ${G.Modes.name}` : '') +
-                 (G.Modes.endless ? ` · Round ${G.Modes.round}` : '')
+                 (G.Modes.endless || G.Modes.waves ? ` · Round ${G.Modes.round}` : '')
     }, () => { pl = null; G.Flow.afterRun(); });
   }
 
@@ -867,7 +868,8 @@ G.Game = (() => {
     G.World.update(dt, G.Camera);
 
     const all = everyone();
-    if (!coop || G.Coop.isHost) { G.Path.update(dt, all); G.Spawner.update(dt, all, ft); }
+    if (G.Modes.waves && !coop) { G.Path.update(dt, all); G.Spawner.tickBanner(dt); G.Waves.update(dt, pl); }
+    else if (!coop || G.Coop.isHost) { G.Path.update(dt, all); G.Spawner.update(dt, all, ft); }
     else G.Spawner.tickBanner(dt);
     G.EnemyMgr.update(dt, all);
     G.EnemyMgr.rebuildGrid();
@@ -879,8 +881,8 @@ G.Game = (() => {
     G.Hazards.update(dt);
     G.Interact.update(dt, pl);
     G.Rift.update(dt, pl, ft);
-    if (!G.Modes.endless) G.Judgment.update(dt, pl, ft);
-    G.Events.update(dt, all, ft);
+    if (!G.Modes.noJudgment) G.Judgment.update(dt, pl, ft);
+    if (!G.Modes.waves) G.Events.update(dt, all, ft);
     G.Weather.update(dt, ft, pl);
     G.Modes.tick(dt, pl);
     G.Mega.update(dt);
@@ -932,6 +934,7 @@ G.Game = (() => {
     const arceus = pl && state !== 'ui' ? G.Judgment.drawable() : null;
     if (arceus) items.push({ y: arceus.y, ent: arceus });
     if (pl && state !== 'ui') for (const d of G.Events.drawables()) items.push({ y: d.y, ent: d });
+    if (pl && state !== 'ui') for (const d of G.Waves.drawables()) items.push({ y: d.y, ent: d });
     items.sort((a, b) => a.y - b.y);
     for (const it of items) {
       if (it.prop) G.World.drawProp(ctx, it.prop, t);
@@ -1096,7 +1099,12 @@ G.Game = (() => {
       G.Camera.apply(ctx);
       drawScene(G.Camera, wanderers);
       ctx.restore();
-      if (G.Halloween.on) G.World.drawNight(ctx, w, h, G.Camera, t);
+      if (pl && G.Waves.on) {
+        // Halloween Waves: a darker night, lit by your partner, lanterns and the chapel.
+        const L = G.Waves.lights();
+        for (const p of everyone()) if (!p.dead) L.push({ x: p.x, y: p.y - p.bodyH * 0.5, r: 85 });
+        G.World.drawNight(ctx, w, h, G.Camera, t, L);
+      } else if (G.Halloween.on) G.World.drawNight(ctx, w, h, G.Camera, t);
       G.World.drawVignette(ctx, w, h);
     }
 
