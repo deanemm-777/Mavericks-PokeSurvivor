@@ -231,7 +231,7 @@ G.Waves = (() => {
       if (!lost) return null;
       let chapel = null;
       for (let i = 0; i < 6 && !chapel; i++) {
-        const c = spot(lost, 520, 760, 44);
+        const c = spot(lost, 520, 760, 90);
         if (c && G.U.dist(c.x, c.y, pl.x, pl.y) > 380) chapel = c;
       }
       if (!chapel) return null;
@@ -246,9 +246,9 @@ G.Waves = (() => {
     }
     if (kind === 'doors') {
       const items = [];
-      for (let i = 0; i < 3; i++) {
-        const s = spot(pl, 220, 480, 30);
-        if (s && !items.some(d => G.U.dist(d.x, d.y, s.x, s.y) < 140)) items.push(Object.assign(s, { prog: 0, done: false, res: '' }));
+      for (let i = 0; i < 14 && items.length < 3; i++) {
+        const s = spot(pl, 220, 480, 48);
+        if (s && !items.some(d => G.U.dist(d.x, d.y, s.x, s.y) < 170)) items.push(Object.assign(s, { prog: 0, done: false, res: '', v: Math.floor(Math.random() * 3) }));
       }
       if (items.length < 2) return null;
       return { kind, t: OBJ_TIME, items, intro: 'Doors creak open… knock for a trick or a treat!',
@@ -312,7 +312,7 @@ G.Waves = (() => {
           L.anim.dir = G.Sprites.dirFromAngle(ang);
           L.anim.loop('Walk');
         } else L.anim.loop('Idle');
-        if (L.following && G.U.dist2(L.x, L.y, o.chapel.x, o.chapel.y) < 52 * 52) {
+        if (L.following && G.U.dist2(L.x, L.y, o.chapel.x, o.chapel.y) < 64 * 64) {
           o.chapel.done = true;
           G.Spawner.say(L.name + ' is safe!', 2, true);
           complete(o, pl);
@@ -404,7 +404,85 @@ G.Waves = (() => {
   const rect = (ctx, c, x, y, w, h) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), w, h); };
   function groundShadow(ctx, x, y, rx) { ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(x, y, rx, rx * 0.35, 0, 0, 6.2832); ctx.fill(); }
 
+  /*
+   * Doofcraft's Haunted Hollow props (assets/halloween/hh-props.png, one sheet,
+   * drawn ×2 like the map's other props). The hand-drawn versions below are only
+   * used until the sheet has loaded.
+   */
+  const SHEET = {
+    chapel: [0, 0, 180, 186], crypt0: [181, 0, 48, 52], crypt1: [0, 187, 48, 52], crypt2: [49, 187, 48, 52],
+    cageLocked: [98, 187, 24, 28], cageBars: [123, 187, 24, 28], cageOpen: [148, 187, 24, 28],
+    lanternLit: [173, 187, 8, 23], lanternOut: [182, 187, 8, 23]
+  };
+  const sheet = new Image();
+  let sheetOk = false;
+  sheet.onload = () => { sheetOk = true; };
+  sheet.src = 'assets/halloween/hh-props.png';
+  /** Draws a sheet piece ×2, bottom-centred on (x, y). */
+  function piece(ctx, name, x, y, k = 2) {
+    const [sx, sy, w, h] = SHEET[name];
+    ctx.drawImage(sheet, sx, sy, w, h, Math.round(x - w * k / 2), Math.round(y - h * k + 2), w * k, h * k);
+  }
+
+  function drawCageImg(ctx, c) {
+    groundShadow(ctx, c.x, c.y, 24);
+    if (c.done) {
+      piece(ctx, 'cageOpen', c.x, c.y);
+      if (c.hop < 1.2) {
+        ctx.save(); ctx.globalAlpha = Math.max(0, 1 - c.hop / 1.2);
+        c.anim.draw(ctx, c.x, c.y - Math.abs(Math.sin(c.hop * 9)) * 10 - c.hop * 20, {});
+        ctx.restore();
+      }
+      return;
+    }
+    c.anim.draw(ctx, c.x, c.y - 4, {});
+    piece(ctx, 'cageLocked', c.x, c.y);
+    ring(ctx, c.x, c.y, c.prog, '#ffd23f');
+  }
+
+  function drawLanternImg(ctx, l, t) {
+    piece(ctx, l.done ? 'lanternLit' : 'lanternOut', l.x, l.y);
+    if (l.done) {
+      const f = 0.8 + Math.sin(t * 9 + l.wig) * 0.12 + Math.sin(t * 17 + l.wig * 2) * 0.08;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      const g = ctx.createRadialGradient(l.x, l.y - 34, 1, l.x, l.y - 34, 28 * f);
+      g.addColorStop(0, 'rgba(255,170,60,.5)'); g.addColorStop(1, 'rgba(255,120,40,0)');
+      ctx.fillStyle = g; ctx.fillRect(l.x - 32, l.y - 66, 64, 64);
+      ctx.restore();
+    } else ring(ctx, l.x, l.y, l.prog, '#ffb347');
+  }
+
+  function drawChapelImg(ctx, c, t) {
+    piece(ctx, 'chapel', c.x, c.y);
+    if (!c.done) {
+      const b = Math.sin(t * 4) * 3;
+      ctx.fillStyle = '#ffd23f'; ctx.font = '700 14px Pixelify, monospace'; ctx.textAlign = 'center';
+      ctx.fillText('▼', c.x, c.y - 92 + b);
+    }
+  }
+
+  function drawDoorImg(ctx, d, t) {
+    piece(ctx, 'crypt' + d.v, d.x, d.y);
+    if (!d.done) {
+      // A jack-o'-lantern on the step, so the knockable crypts stand out.
+      const px = d.x + 30, py = d.y - 2, f = 0.8 + Math.sin(t * 8 + d.x) * 0.15;
+      ctx.fillStyle = '#e8721c'; ctx.beginPath(); ctx.ellipse(px, py - 5, 7, 5.5, 0, 0, 6.2832); ctx.fill();
+      rect(ctx, '#3f6b22', px - 1, py - 12, 2, 3);
+      const c = `rgba(255,${Math.round(220 * f)},80,1)`;
+      rect(ctx, c, px - 4, py - 7, 2, 2); rect(ctx, c, px + 2, py - 7, 2, 2); rect(ctx, c, px - 3, py - 4, 6, 1);
+      ring(ctx, d.x, d.y, d.prog, '#ff9a3c');
+    } else {
+      ctx.font = '800 10px Pixelify, monospace'; ctx.textAlign = 'center';
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.7)';
+      const txt = d.res === 'treat' ? 'TREAT' : 'TRICK';
+      ctx.strokeText(txt, d.x, d.y - 110);
+      ctx.fillStyle = d.res === 'treat' ? '#ffd23f' : '#b77dff';
+      ctx.fillText(txt, d.x, d.y - 110);
+    }
+  }
+
   function drawCage(ctx, c, t) {
+    if (sheetOk) return drawCageImg(ctx, c);
     groundShadow(ctx, c.x, c.y, 22);
     const W = 34, H = 40, x0 = c.x - W / 2, y0 = c.y - H;
     if (!c.done || c.hop < 1.2) {
@@ -431,6 +509,7 @@ G.Waves = (() => {
   }
 
   function drawLantern(ctx, l, t) {
+    if (sheetOk) return drawLanternImg(ctx, l, t);
     groundShadow(ctx, l.x, l.y, 8);
     rect(ctx, '#2a1d14', l.x - 1.5, l.y - 30, 3, 30);   // post
     rect(ctx, '#4a3526', l.x - 1, l.y - 30, 1, 30);
@@ -450,6 +529,7 @@ G.Waves = (() => {
   }
 
   function drawChapel(ctx, c, t) {
+    if (sheetOk) return drawChapelImg(ctx, c, t);
     groundShadow(ctx, c.x, c.y, 40);
     const W = 64, H = 38, x0 = c.x - W / 2, y0 = c.y - H;
     rect(ctx, '#3a3646', x0, y0, W, H);                   // walls
@@ -492,6 +572,7 @@ G.Waves = (() => {
   }
 
   function drawDoor(ctx, d, t) {
+    if (sheetOk) return drawDoorImg(ctx, d, t);
     groundShadow(ctx, d.x, d.y, 28);
     const W = 44, H = 30, x0 = d.x - W / 2, y0 = d.y - H;
     rect(ctx, '#3b2a1e', x0, y0, W, H);                   // planks
@@ -539,7 +620,7 @@ G.Waves = (() => {
       if (o.status === 'failed') continue;
       if (o.kind === 'lanterns') for (const l of o.items) out.push({ x: l.x, y: l.y - 37, r: l.done ? 150 : 50, col: l.done ? 'rgba(255,160,60,.3)' : null });
       if (o.kind === 'cage') for (const c of o.items) out.push({ x: c.x, y: c.y - 20, r: 70 });
-      if (o.kind === 'doors') for (const d of o.items) out.push({ x: d.x + 18, y: d.y - 8, r: 90, col: 'rgba(255,138,42,.22)' });
+      if (o.kind === 'doors') for (const d of o.items) out.push({ x: d.x + 30, y: d.y - 8, r: 90, col: 'rgba(255,138,42,.22)' });
       if (o.kind === 'escort') { out.push({ x: o.chapel.x, y: o.chapel.y - 20, r: 160, col: 'rgba(255,190,90,.18)' }); out.push({ x: o.lost.x, y: o.lost.y - 10, r: 60 }); }
     }
     return out;
