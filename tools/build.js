@@ -21,7 +21,19 @@ const block = dev.slice(i, j + END.length);
 const files = [...block.matchAll(/<script[^>]*src="(js\/[^"]+\.js)"/g)].map(m => m[1]);
 
 // Une los archivos en orden; cada uno separado por ';' por si alguno no acaba en punto y coma.
-let joined = files.map(f => `/* ${f} */\n` + fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n;\n');
+// Standalone build (faster start): the big data tables become JSON.parse('...'),
+// which phones read several times faster than the same table written as JS.
+const vm = require('vm');
+const JSONIFY = ['js/data/sprites-meta.js', 'js/data/pokedex.js'];
+function jsonify(f, src) {
+  if (!JSONIFY.includes(f)) return src;
+  return src.replace(/\r\n/g, "\n").replace(/^(G\.[A-Z_]+) = ([\[{]\n[\s\S]*?\n[\]}]);$/m, (all, name, lit) => {
+    const val = vm.runInNewContext('(' + lit + ')');
+    return `${name} = JSON.parse(${JSON.stringify(JSON.stringify(val))});`;
+  });
+}
+let joined = files.map(f => `/* ${f} */\n` + jsonify(f, fs.readFileSync(path.join(ROOT, f), 'utf8'))).join('\n;\n');
+for (const f of JSONIFY) if (!joined.includes(`/* ${f} */`)) throw new Error('JSONIFY: ' + f + ' no está en dev.html');
 // Anti-trampas: en la versión publicada el juego va ENCERRADO en una función:
 // G deja de existir en la consola del navegador (F12), y con él los atajos para
 // hacerse invencible, saltar el reloj, etc. (dev.html sigue igual, para programar).
@@ -46,7 +58,9 @@ execFileSync(npx, ['--yes', 'terser@5', tmp, '--compress', 'passes=1', '--mangle
 // Y ofuscado: el código queda ilegible y se rompe solo si lo reformatean para
 // tocarlo. Las cadenas, en una tabla codificada (sólo una parte, para no frenar
 // el juego). Semilla fija: el mismo código da siempre el mismo archivo.
-if (!EXPOSE) {
+// Standalone build: no obfuscation (personal copy, and it made the game start
+// noticeably slower on phones). Set OBFUSCATE=1 to put it back.
+if (!EXPOSE && process.env.OBFUSCATE) {
   execFileSync(npx, ['--yes', 'javascript-obfuscator@4.1.1', outJs, '--output', outJs,
     '--compact', 'true', '--self-defending', 'true', '--seed', '7',
     '--string-array', 'true', '--string-array-encoding', 'base64', '--string-array-threshold', '0.1',

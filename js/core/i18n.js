@@ -180,9 +180,33 @@ G.I18n = (() => {
     while ((n = tw.nextNode())) { if (n.nodeType === 3) doText(n); else doEl(n); }
   }
 
+  /*
+   * Standalone build (faster start): the translations worked out on one launch
+   * are saved, so the next launch doesn't have to work them out again (the
+   * menu's texts are the same every time). Only for the published build
+   * (app.min.js?v=...): a new version starts from scratch.
+   */
+  const CKEY = 'ps.i18n.cache.' + lang;
+  const cacheVer = (() => { const sc = document.querySelector('script[src*="app.min.js"]'); return sc ? (sc.src.split('v=')[1] || '') : ''; })();
+  function loadCache() {
+    if (!cacheVer) return;
+    try {
+      const o = JSON.parse(localStorage.getItem(CKEY) || 'null');
+      if (o && o.v === cacheVer && Array.isArray(o.m)) for (const [k, v] of o.m) if (!cache.has(k)) cache.set(k, v);
+    } catch (e) { /* nada */ }
+    setTimeout(saveCache, 6000);
+  }
+  function saveCache() {
+    try {
+      const m = [...cache].filter(([k, v]) => k.length < 400 && typeof v === 'string').slice(0, 3000);
+      localStorage.setItem(CKEY, JSON.stringify({ v: cacheVer, m }));
+    } catch (e) { /* nada */ }
+  }
+
   function startDom() {
     document.title = t('PokéSurvivor – Juego Pokémon gratis online estilo Survivor.io');
     if (lang === 'es') return;
+    loadCache();
     // Los enlaces a las páginas de la web, a su versión en inglés.
     const EN_LINKS = { 'guia/': 'en/guide/', 'pokedex/': 'en/pokedex/' };
     document.querySelectorAll('a[href]').forEach(a => { const h = a.getAttribute('href'); if (lang === 'en' && EN_LINKS[h]) a.setAttribute('href', EN_LINKS[h]); });

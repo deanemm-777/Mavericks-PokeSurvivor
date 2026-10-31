@@ -2,16 +2,16 @@
  * Everything the game needs (code, ~13,500 sprite files, fonts, icons) is
  * listed in offline-files.js. On first launch the page asks this worker to
  * download the whole list into the cache; after that the game runs with no
- * connection at all (airplane mode included). The page itself is loaded
- * network-first (so updates show up as soon as you're online); everything else
- * comes from the saved copy.
+ * connection at all (airplane mode included). Everything, the page included,
+ * comes from the saved copy, so the game opens without waiting on the network;
+ * a new version is picked up when the browser sees a new sw.js.
  *
  * To ship a new version of your game, run tools/build_offline.sh: it rebuilds,
  * regenerates offline-files.js and stamps the version into BUILD below.
  */
 // BUILD is rewritten by tools/make_offline_list.js on every build, so this file's
 // bytes change with each version: that is what makes phones notice an update.
-const BUILD = 'd1a02fa788';
+const BUILD = 'd1f548cd6a';
 importScripts('offline-files.js?v=' + BUILD);  // defines self.OFFLINE = { version, files: [...] }
 const CACHE = 'ps-offline-' + self.OFFLINE.version;
 const CORE = ['./', './index.html', './manifest.webmanifest'];
@@ -79,8 +79,6 @@ self.addEventListener('message', e => {
 });
 
 // ---------- serving ----------
-// The page itself: network first (so an update shows up as soon as you're online),
-// the saved copy when offline or the network is slow.
 // Everything else: the saved copy (exact version first), else the network, else
 // any saved version of that file.
 self.addEventListener('fetch', e => {
@@ -100,17 +98,19 @@ self.addEventListener('fetch', e => {
   }
   if (url.origin !== location.origin) return;
   if (req.mode === 'navigate') {
+    // The saved page straight away (no waiting on the network). A new version
+    // still arrives: the browser checks sw.js on every launch, the new worker
+    // saves the new page, takes over, and the game reloads into it (main.js).
     e.respondWith((async () => {
       const c = await caches.open(CACHE);
+      const saved = (await c.match('./index.html')) || (await c.match(req, { ignoreSearch: true }));
+      if (saved) return saved;
       try {
-        const res = await Promise.race([
-          fetch(req, { cache: 'no-cache' }),
-          new Promise((_, no) => setTimeout(() => no(new Error('slow')), 3500))
-        ]);
+        const res = await fetch(req, { cache: 'no-cache' });
         if (res.ok) c.put('./index.html', res.clone());
         return res;
       } catch (err) {
-        return (await c.match('./index.html')) || (await c.match(req, { ignoreSearch: true })) || Response.error();
+        return (await caches.match('./index.html', { ignoreSearch: true })) || Response.error();
       }
     })());
     return;
