@@ -11,7 +11,7 @@
  *   Kecleon's stall        Kecleon Shop
  *   Blue stall             Poké Mart
  *   Pumpkaboo's stall      Halloween Shop (while it's open)
- *   PC (Porygon)           Pokémon, or the Move Dex
+ *   PC (Porygon)           Pokémon (the Move Dex is in the dock)
  *   Mailbox                Bag
  *   Slot machine (Meowth)  Gacha
  *   Job board              Missions
@@ -32,7 +32,7 @@ G.Camp = (() => {
     { id: 'mart', kind: 'stall', go: 'shop', name: 'Kecleon Shop', x: 5, y: 12, w: 5, npc: { dex: 352, x: 7.5, y: 13.45, dir: 0 } },
     { id: 'event-shop', kind: 'stall', go: 'halloween', name: 'Halloween Shop', x: 6, y: 18.2, w: 4, hw: true, npc: { dex: 710, x: 8, y: 19.65, dir: 0 } },
     { id: 'pokemart', kind: 'stall', go: 'mart', name: 'Poké Mart', x: 36.8, y: 11.8, w: 5 },
-    { id: 'pc', kind: 'pc', go: 'dex', name: 'Pokémon', alt: { go: 'movedex', name: 'Move Dex' }, x: 32, y: 12.4, npc: { dex: 137, x: 34.6, y: 14.3, dir: 6 } },
+    { id: 'pc', kind: 'pc', go: 'dex', name: 'Pokémon', x: 32, y: 12.4, npc: { dex: 137, x: 34.6, y: 14.3, dir: 6 } },
     { id: 'mailbox', kind: 'mailbox', go: 'bag', name: 'Bag', x: 18.3, y: 11.6 },
     { id: 'gacha', kind: 'gacha', go: 'gacha', name: 'Gacha', x: 13.5, y: 19.4, npc: { dex: 52, x: 12.7, y: 22.3, dir: 2 } },
     { id: 'board', kind: 'board', go: 'goals', name: 'Missions', x: 17.6, y: 20.4 },
@@ -200,17 +200,9 @@ G.Camp = (() => {
   const open = o => openGo(o.go);
   function interact() { if (near) open(near); }
 
-  /** The "A Pokémon" prompt; the PC also offers the Move Dex. */
+  /** The A button lights up when you're next to something (the object's label
+   *  turns gold too). No prompt pill: the A button does that job now. */
   function showPrompt() {
-    const p = document.getElementById('camp-prompt');
-    if (p) {
-      p.classList.toggle('hidden', !near);
-      if (near) {
-        p.innerHTML = `<span data-pgo="${near.go}"><b>A</b> ${near.name}</span>` +
-          (near.alt ? ` <span class="camp-alt" data-pgo="${near.alt.go}">· ${near.alt.name}</span>` : '');
-        p.querySelectorAll('[data-pgo]').forEach(s => { s.onclick = e => { e.stopPropagation(); G.Audio.sfx('click'); openGo(s.dataset.pgo); }; });
-      }
-    }
     const act = document.getElementById('camp-act');
     if (act) act.classList.toggle('ready', !!near);
   }
