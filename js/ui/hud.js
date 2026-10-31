@@ -124,6 +124,7 @@ G.HUD = (() => {
       bar(ctx, w / 2 - 60, 79 + oy, 120, 5, Math.min(1, k / q), '#ffd23f');
     }
     if (G.Waves.on) drawWaves(ctx, w, h, pl, oy, sa);
+    if (G.Dojo.on) G.Dojo.drawHud(ctx, w, h, pl, oy, F);
     // Z-move name across the screen when it is unleashed.
     const z = G.Mega.zFx;
     if (z) {
@@ -138,6 +139,20 @@ G.HUD = (() => {
       ctx.restore();
     }
     if (pl.dead) return;
+    // Your stats, always shown in a compact line above the move bar (update 40). Tap: the full stats (pause).
+    {
+      const sy = h - 54 - 18 - (touch ? Math.min(28, sa.bottom) : 0) - 14;
+      const txt = 'ATK ×' + (pl.atk / Math.max(0.01, pl.baseAtk)).toFixed(2) + '  CD ' + Math.round((1 - pl.cdMul) * 100) + '%  SPD ' + Math.round(pl.spd) +
+                  '  DEF ' + pl.defenceStat + '  CRIT ' + Math.round((pl.critChance || 0) * 100) + '%';
+      ctx.save();
+      ctx.font = F(700, 9); ctx.textAlign = 'left';
+      const tw = ctx.measureText(txt).width, sx = 8 + sa.left;
+      ctx.fillStyle = 'rgba(8,12,24,.55)'; ctx.fillRect(sx - 4, sy - 10, tw + 8, 14);
+      ctx.fillStyle = 'rgba(234,242,255,.85)';
+      G.I18n.rawCanvas(ctx, 'fillText', txt, sx, sy);
+      ctx.restore();
+      if (touch) G.Touch.addButton(sx - 4, sy - 12, tw + 8, 18, () => G.Game.togglePause(), 5);
+    }
     // Buttons: bottom right, above the move bar.
     const R = 22, gap = 10;
     const by = h - 54 - 18 - (touch ? Math.min(28, sa.bottom) : 0) - R - 26;

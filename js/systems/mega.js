@@ -145,6 +145,8 @@ G.Mega = (() => {
     get can() { return can(); },
     get megaCharge() { return megaCharge; },
     get zCharge() { return zCharge; },
+    /** Training Dojo: both meters full. */
+    fill() { if (can()) megaCharge = 1; zCharge = 1; },
     get megaT() { return megaT; },
     get active() { return megaT > 0; },
     get megaReady() { return megaReady(); },

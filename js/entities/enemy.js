@@ -234,9 +234,9 @@
       if (G.Waves.on) {
         // Halloween Waves: 5 % of defeated Pokémon drop candy (Ghost-type 8 %, bosses 5).
         const n = G.Waves.candyFor(this);
-        if (n) G.Pickups.drop('candy', this.x + G.U.rand(-8, 8), this.y - 6, n);
+        if (n) G.Pickups.drop('candy', this.x + G.U.rand(-8, 8), this.y - 6, n * G.Bonus.candy);
       } else if (G.Halloween.inRun && !this.judge && G.Halloween.takeCandy(G.Game.st.time, (this.types || []).includes('ghost') ? 1 : 3)) {
-        G.Pickups.drop('candy', this.x + G.U.rand(-8, 8), this.y - 6, 1);
+        G.Pickups.drop('candy', this.x + G.U.rand(-8, 8), this.y - 6, G.Bonus.candy);
       }
       if (this.golden && Math.random() < 0.35) G.Pickups.drop('coin', this.x + 6, this.y - 4, 3);
       // Duende del tesoro: Meowth suelta monedas; Gholdengo, un ticket ×10.

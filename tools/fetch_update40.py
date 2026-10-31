@@ -81,7 +81,7 @@ def main():
         ' */',
         'Object.assign(G.SPRITE_META, ' + json.dumps({str(k): v for k, v in meta.items()}, separators=(',', ':')) + ');',
         'Object.assign(G.MEGAS, ' + json.dumps({str(k): v for k, v in megas.items()}, separators=(',', ':')) + ');',
-        'if (G.MEGAS[6]) G.MEGAS[6].alt = { n: \'Mega Charizard Y\' };',
+        'if (G.MEGAS[6]) G.MEGAS[6].alt = { n: \'Mega Charizard Y\', spr: 0 };   // no sprite: Charizard\'s, with the Mega aura',
         '',
     ]
     with io.open(OUT_JS, 'w', encoding='utf-8', newline='\n') as f:

@@ -1,8 +1,10 @@
 /* ============ menu.js — menú principal, colección y mejoras ============ */
 G.MenuUI = (() => {
   const $ = G.UI.$;
-  const GEN_NAMES = ['Kanto', 'Johto', 'Hoenn', 'Sinnoh', 'Teselia', 'Kalos', 'Alola', 'Galar', 'Paldea', 'Special'];   // (Special: standalone forms, data/forms-setup.js)
-  const genList = g => (g === 10 ? G.FORMS : g ? G.DEX.filter(p => p.gen === g) : G.DEX);
+  const GEN_NAMES = ['Kanto', 'Johto', 'Hoenn', 'Sinnoh', 'Teselia', 'Kalos', 'Alola', 'Galar', 'Paldea', 'Special', 'Mega'];   // (Special: standalone forms, data/forms-setup.js)
+  // 11: Pokémon that can Mega Evolve or fuse (update 40's Mega tab).
+  const megaList = () => Object.keys(G.MEGAS || {}).map(Number).sort((a, b) => G.dexNo(a) - G.dexNo(b)).map(d => G.DEX_BY[d]).filter(Boolean);
+  const genList = g => (g === 11 ? megaList() : g === 10 ? G.FORMS : g ? G.DEX.filter(p => p.gen === g) : G.DEX);
   let dexGen = 1, dexSel = null;
   // Filtros de la colección (se combinan): tengo / me faltan, rarezas (varias),
   // shiny, favoritos, tipo y búsqueda; y el orden. Duran mientras no recargas.
@@ -11,7 +13,7 @@ G.MenuUI = (() => {
   const SORTS = [['num', 'Nº'], ['name', 'Nombre'], ['rar', 'Rareza'], ['new', 'Recién conseguidos'], ['used', 'Más usados']];
 
   function init() {
-    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', shop: 'shop', bag: 'bag', gacha: 'ball4', goals: 'medal3', friends: 'friends', rank: 'trophy', settings: 'gear', theme: 'phone', mart: 'shop', halloween: 'candy' };
+    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', shop: 'shop', bag: 'bag', gacha: 'ball4', goals: 'medal3', friends: 'friends', rank: 'trophy', settings: 'gear', theme: 'phone', mart: 'shop', halloween: 'candy', dojo: 'fist', movedex: 'book' };
     document.querySelectorAll('#scr-menu [data-go]').forEach(b => {
       b.insertAdjacentHTML('afterbegin', `<span class="mi-ico">${G.Icons.html(ICON[b.dataset.go], 26)}</span>`);
       b.dataset.sfx = b.dataset.go === 'play' ? 'confirm' : 'click';
@@ -29,6 +31,8 @@ G.MenuUI = (() => {
         else if (go === 'settings') G.SettingsUI.open();
         else if (go === 'mart') G.MartUI.open('mart');
         else if (go === 'halloween') G.MartUI.open('halloween');
+        else if (go === 'dojo') G.Game.startRun(null, { mode: 'dojo' });
+        else if (go === 'movedex') G.MoveDexUI.open();
         else if (go === 'theme') {
           // Standalone build: Game Boy skin <-> full screen with the touch joystick.
           const full = G.Settings.get('theme') !== 'full';
@@ -54,8 +58,21 @@ G.MenuUI = (() => {
     if (el) el.textContent = G.Settings.get('theme') === 'full' ? 'Full screen + joystick' : 'Game Boy skin';
   }
 
+  /** Bonus event pill, top left, with its countdown (systems/bonus.js). */
+  let bonusTimer = 0;
+  function bonusLine() {
+    const el = $('bonus-pill');
+    if (!el) return;
+    const t = G.Bonus.countdown();
+    el.classList.toggle('hidden', !t);
+    if (t) el.textContent = '★ ' + t;
+    clearTimeout(bonusTimer);
+    if (t && G.UI.isOpen('scr-menu')) bonusTimer = setTimeout(bonusLine, 30000);
+  }
+
   function open() {
     themeLine();
+    setTimeout(bonusLine, 0);
     // Standalone: the Halloween Shop shows up from two weeks before until your candy is spent.
     const hw = document.querySelector('#scr-menu [data-go=halloween]');
     if (hw) hw.classList.toggle('hidden', !G.MartUI.hwVisible());
@@ -367,6 +384,7 @@ G.MenuUI = (() => {
         ${bar('Def. Esp.', q.sd, max.def, Math.round(q.sd), 'sd')}
         ${bar('Velocidad', q.spd, max.spd, Math.round(q.spd), 'spd')}
         <p class="sub center" style="margin:6px 0 0">Pega mejor con ataques <b class="gold">${G.Stats.sideOf(q) === 'special' ? 'especiales' : 'físicos'}</b></p>
+        ${megaBox(dex)}
         ${monExtras(dex)}
         ${p.types.length === 1 ? `<p class="sub center" style="margin:2px 0 0">Monotipo: +20 % de daño con sus ataques de tipo ${G.U.TYPE_NAME[p.types[0]]}</p>` : ''}
         <p style="font-size:14px;margin:10px 0 4px">Empieza con <b class="gold">${G.T(G.Moves.BY_ID[G.startMoveOf(dex)].name, 'move')}</b></p>
@@ -399,6 +417,19 @@ G.MenuUI = (() => {
       renderGrid(true); showDetail(dex);
     };
     if (own) wireExtras(dex, box);
+    for (const c of box.querySelectorAll('canvas[data-mega]')) G.UI.sprite(c, +c.dataset.mega, { lively: true, scale: 2, dir: 1 });
+  }
+
+  /** Mega tab (update 40): the form(s) it can take in runs, and what they give. */
+  function megaBox(dex) {
+    const m = G.MEGAS && G.MEGAS[dex];
+    if (!m) return '';
+    const forms = [m, ...(m.alt ? [Object.assign({}, m, m.alt)] : [])];
+    const boost = m.fusion ? 'Fuses for the rest of the run: ' : 'For 30 s: ';
+    return `<div class="mega-box" translate="no"><b class="gold">${m.fusion ? 'Fusion' : 'Mega Evolution'}</b>
+      <div class="mega-forms">${forms.map(f => `<div class="mega-form"><canvas data-mega="${f.spr && G.SPRITE_META[f.spr] ? f.spr : dex}" width="110" height="100"></canvas><small>${f.n}</small></div>`).join('')}</div>
+      <p class="sub" style="margin:2px 0 0">${boost}+40 % damage, +15 % speed, -15 % cooldowns${m.fusion ? '' : ', and 30 % health back'}.
+      ${forms.length > 1 ? 'Each time it alternates between the two forms.' : ''} Fill the Mega meter by defeating Pokémon, then press MEGA (L + R).</p></div>`;
   }
 
   // ---------------- ficha: lo que hace cada ataque (24-10-2026) ----------------

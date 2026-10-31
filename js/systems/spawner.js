@@ -80,7 +80,11 @@ G.Spawner = (() => {
   function rollShiny(dex) {
     if (!G.Sprites.hasShiny(dex)) return false;
     if (forceShiny > 0) { forceShiny--; return true; }
-    return Math.random() < SHINY_RATE;
+    // Bonus events (×2 on a shiny weekend) and a completed region (its Iris Charm, the
+    // Shiny Charm of this build): ×2 for that region's wild Pokémon (update 40).
+    const mon = G.DEX_BY[dex], s = G.DB.save;
+    const charm = mon && s && G.Gacha.hasIris(s, mon.gen) ? 2 : 1;
+    return Math.random() < SHINY_RATE * charm * G.Bonus.shiny;
   }
 
   // Como mucho 3 curanderos, 3 escuderos y 3 invocadores vivos a la vez

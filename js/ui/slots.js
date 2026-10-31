@@ -40,10 +40,10 @@ G.Slots = (() => {
     cv = canvas; ctx = cv.getContext('2d');
     fast = false; skipped = false;
     cv.onclick = () => { fast = true; };
-    const hundred = total === 100;
+    const hundred = total > 10;   // any batch of several ×10 pulls (update 40)
     st = {
       t: 0, lever: 0, reels: REEL_X.map(() => ({ off: Math.random() * 400, spin: false, sym: 'ball', bounce: 0, speed: 0 })),
-      ten: results.length === 10, tray: [], led: hundred ? 'TIRADA ×100' : results.length === 10 ? 'TIRADA ×10' : '¡SUERTE!',
+      ten: results.length === 10, tray: [], led: hundred ? 'PULL ×' + total : results.length === 10 ? 'TIRADA ×10' : '¡SUERTE!',
       ledCol: C.bulbOn, win: null, frenzy: 0, sparks: []
     };
     last = performance.now();
@@ -53,7 +53,7 @@ G.Slots = (() => {
     const ten = results.length === 10;
     for (let i = 0; i < results.length && !skipped; i++) {
       const r = results[i];
-      if (ten) st.led = (hundred ? '×100 · ' : 'TIRADA ') + (i + 1) + '/10';
+      if (ten) st.led = (hundred ? '×' + total + ' · ' : 'TIRADA ') + (i + 1) + '/10';
       // Palanca.
       G.Audio.sfx('ball');
       await tween(v => { st.lever = v; }, 0, 1, ten ? 0.12 : 0.22);

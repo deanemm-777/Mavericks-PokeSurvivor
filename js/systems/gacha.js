@@ -26,8 +26,8 @@ G.Gacha = (() => {
   /** @param use  't1' (tickets normales) o 't10' (un ticket ×10, sólo para la ×10) */
   function costOf(save, n, use = 't1') {
     const t = save.tickets || { t1: 0, t10: 0 };
-    if (n === 100 && use === 't10') return t.t10 >= 10 ? { t1: 0, t10: 10 } : null;
-    if (n === 10 && use === 't10') return t.t10 >= 1 ? { t1: 0, t10: 1 } : null;
+    // ×10 tickets: one per 10 pulls (any batch of 10s: update 40's ×1/×5/×10/Max).
+    if (use === 't10') return n % 10 === 0 && t.t10 >= n / 10 ? { t1: 0, t10: n / 10 } : null;
     return t.t1 >= n ? { t1: n, t10: 0 } : null;
   }
   const RATES = [[1, 45], [2, 30], [3, 17], [4, 6.5], [5, 1.5]];
@@ -89,7 +89,7 @@ G.Gacha = (() => {
     const d = dexOf(save, gen); return d.have >= d.total;
   }
 
-  function shinyRate(save, gen) { return gen === SPOOKY.gen || hasIris(save, gen) ? SHINY_RATE_IRIS : SHINY_RATE; }
+  function shinyRate(save, gen) { return (gen === SPOOKY.gen || hasIris(save, gen) ? SHINY_RATE_IRIS : SHINY_RATE) * (G.Bonus ? G.Bonus.gachaShiny : 1); }
 
   function rollRarity(min = 1) {
     const rates = RATES.filter(([r]) => r >= min);
@@ -113,11 +113,11 @@ G.Gacha = (() => {
    */
   function pull(save, n, gen = 1, use = 't1') {
     if (!isOpen(gen)) return null;
-    if (n === 100) {
-      if (!costOf(save, 100, use)) return null;
+    if (n > 10 && n % 10 === 0) {
+      if (!costOf(save, n, use)) return null;
       const hadIris = hasIris(save, gen);
       const out = [];
-      for (let k = 0; k < 10; k++) out.push(...pull(save, 10, gen, use));
+      for (let k = 0; k < n / 10; k++) out.push(...pull(save, 10, gen, use));
       out.iris = !hadIris && hasIris(save, gen) ? gen : 0;
       return out;
     }

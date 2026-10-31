@@ -196,7 +196,9 @@ G.Game = (() => {
     runReal = performance.now(); tampered = false;
 
     pl = new G.Player(mon, perks, snap ? !!snap.shiny : !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
-    pl.xpMul *= G.Modes.diff.xp;            // difficulty (update 40)
+    G.Bonus.runStart();
+    pl.xpMul *= G.Modes.diff.xp * G.Bonus.xp;   // difficulty and bonus events (update 40)
+    if (G.Modes.dojo) G.Dojo.start(pl);
     G.Orbs.reset();
     pl.setAbility(G.Mons.abilityOf(mon.dex).id);
     pl.anim.skin = G.Skins.worn(save, mon.dex) || null;      // su disfraz (core/skins.js)
@@ -252,7 +254,7 @@ G.Game = (() => {
 
   /** Standalone: write a checkpoint of the run in progress (not in a rift arena, the Judgment or co-op). */
   function saveCheckpoint() {
-    if (!pl || pl.dead || G.Coop.active || state === 'over' || state === 'ui' || G.Rift.inArena || G.Judgment.active) return false;
+    if (!pl || pl.dead || G.Coop.active || state === 'over' || state === 'ui' || G.Rift.inArena || G.Judgment.active || G.Modes.dojo) return false;
     G.Checkpoint.store(G.Checkpoint.snapshot({ pl, time, seed: runSeed }));
     return true;
   }
@@ -263,6 +265,7 @@ G.Game = (() => {
     bankTickets(false);
     G.Orbs.reset();
     G.Halloween.runEnd();
+    G.Bonus.runEnd();
     G.Audio.music(null);
     G.Audio.sfx('back');
     pl = null;
@@ -459,14 +462,14 @@ G.Game = (() => {
       jefes: pl.bosses * 80,
       recogidas: pl.coins
     };
-    const coins = Math.round((parts.tiempo + parts.derrotados + parts.jefes + parts.recogidas) * mul * G.Modes.coinMul);
+    const coins = Math.round((parts.tiempo + parts.derrotados + parts.jefes + parts.recogidas) * mul * G.Modes.coinMul * G.Bonus.coins);
     // Standalone: each mode keeps its own records (save.stats.modes).
     save.stats.modes = save.stats.modes || {};
-    const mrec = save.stats.modes[G.Modes.id] = save.stats.modes[G.Modes.id] || { best: 0, round: 0, runs: 0 };
+    const mrec = G.Modes.dojo ? { best: 0, round: 0, runs: 0 } : save.stats.modes[G.Modes.id] = save.stats.modes[G.Modes.id] || { best: 0, round: 0, runs: 0 };
     const record = time > (G.Modes.id === 'normal' ? save.stats.bestTime : mrec.best);
     mrec.best = Math.max(mrec.best || 0, Math.floor(time)); mrec.runs = (mrec.runs || 0) + 1;
     if (G.Modes.endless || G.Modes.waves) mrec.round = Math.max(mrec.round || 0, G.Modes.round);
-    G.Checkpoint.clear();
+    if (!G.Modes.dojo) G.Checkpoint.clear();      // (the Dojo never touches a saved run)
 
     save.coins += coins;
     bankTickets(false);
@@ -871,7 +874,8 @@ G.Game = (() => {
     G.World.update(dt, G.Camera);
 
     const all = everyone();
-    if (G.Modes.waves && !coop) { G.Path.update(dt, all); G.Spawner.tickBanner(dt); G.Waves.update(dt, pl); }
+    if (G.Modes.dojo) { G.Spawner.tickBanner(dt); G.Dojo.update(dt, pl); }
+    else if (G.Modes.waves && !coop) { G.Path.update(dt, all); G.Spawner.tickBanner(dt); G.Waves.update(dt, pl); }
     else if (!coop || G.Coop.isHost) { G.Path.update(dt, all); G.Spawner.update(dt, all, ft); }
     else G.Spawner.tickBanner(dt);
     G.EnemyMgr.update(dt, all);
@@ -885,11 +889,11 @@ G.Game = (() => {
     G.Interact.update(dt, pl);
     G.Rift.update(dt, pl, ft);
     if (!G.Modes.noJudgment) G.Judgment.update(dt, pl, ft);
-    if (!G.Modes.waves) G.Events.update(dt, all, ft);
+    if (!G.Modes.waves && !G.Modes.dojo) G.Events.update(dt, all, ft);
     G.Weather.update(dt, ft, pl);
     G.Modes.tick(dt, pl);
     G.Mega.update(dt);
-    if (!coop && (cpT -= dt) <= 0) { cpT = 20; saveCheckpoint(); }
+    if (!coop && !G.Modes.dojo && (cpT -= dt) <= 0) { cpT = 20; saveCheckpoint(); }
     G.FX.update(dt);
 
     G.Audio.music(G.Judgment.active ? G.Judgment.music : G.Rift.inArena ? 'rift' : G.EnemyMgr.bossAlive() ? 'boss' : G.BIOME_MUSIC[biome % G.BIOME_MUSIC.length]);

@@ -5,12 +5,21 @@ G.GachaUI = (() => {
   const $ = G.UI.$;
   let busy = false, skip = false;
   let gen = 1;
+  // Update 40: how many tickets to use at once (1, 5, 10 or all of them). One "ticket" here
+  // is a ×10 pull: 10 normal tickets or one ×10 ticket.
+  let batch = 1;
+  const units = use => {
+    const t = (G.DB.save && G.DB.save.tickets) || { t1: 0, t10: 0 };
+    const have = use === 't10' ? t.t10 : Math.floor(t.t1 / 10);
+    return batch === 'max' ? Math.max(1, have) : batch;
+  };
 
   function init() {
-    $('pull-10').onclick = () => pull(10, 't1');
-    $('pull-10b').onclick = () => pull(10, 't10');
-    $('pull-100').onclick = () => pull(100, 't1');
-    $('pull-100b').onclick = () => pull(100, 't10');
+    $('pull-10').onclick = () => pull(10 * units('t1'), 't1');
+    $('pull-10b').onclick = () => pull(10 * units('t10'), 't10');
+    $('pull-batch').querySelectorAll('[data-batch]').forEach(b => {
+      b.onclick = () => { batch = b.dataset.batch === 'max' ? 'max' : +b.dataset.batch; G.Audio.sfx('click'); refresh(); };
+    });
     $('pull-close').onclick = close;
     // Saltar: se acaba la tragaperras y salen todas las cartas de golpe (también con Esc).
     $('pull-skip').onclick = skipNow;
@@ -81,15 +90,15 @@ G.GachaUI = (() => {
          los jefes y los legendarios de las grietas, a veces, tickets ×10.</p>`;
 
     const t = s.tickets;
-    $('cost-10').innerHTML = `${G.Icons.html('ticket', 18)} 10`;
-    $('cost-10b').innerHTML = `${G.Icons.html('ticket10', 18)} 1`;
-    $('cost-100').innerHTML = `${G.Icons.html('ticket', 18)} 100`;
-    $('cost-100b').innerHTML = `${G.Icons.html('ticket10', 18)} 10`;
+    $('pull-batch').querySelectorAll('[data-batch]').forEach(b => b.classList.toggle('on', String(batch) === b.dataset.batch));
+    const u1 = units('t1'), u10 = units('t10');
+    $('lbl-10').textContent = 'Pull ×' + 10 * u1;
+    $('lbl-10b').textContent = 'Pull ×' + 10 * u10;
+    $('cost-10').innerHTML = `${G.Icons.html('ticket', 18)} ${10 * u1}`;
+    $('cost-10b').innerHTML = `${G.Icons.html('ticket10', 18)} ${u10}`;
     $('gacha-tickets').innerHTML = `Tienes ${G.Icons.html('ticket', 18)} <b>${t.t1}</b> tickets y ${G.Icons.html('ticket10', 18)} <b>${t.t10}</b> tickets ×10`;
-    $('pull-10').disabled = !G.Gacha.costOf(s, 10, 't1');
-    $('pull-10b').disabled = !G.Gacha.costOf(s, 10, 't10');
-    $('pull-100').disabled = !G.Gacha.costOf(s, 100, 't1');
-    $('pull-100b').disabled = !G.Gacha.costOf(s, 100, 't10');
+    $('pull-10').disabled = !G.Gacha.costOf(s, 10 * u1, 't1');
+    $('pull-10b').disabled = !G.Gacha.costOf(s, 10 * u10, 't10');
     G.UI.refreshCoins();
   }
 
@@ -107,7 +116,7 @@ G.GachaUI = (() => {
     const best = Math.max(...res.map(r => r.rarity));
     const fx = $('pull-fx'), slot = $('slot'), out = $('pull-results');
     out.innerHTML = '';
-    out.classList.toggle('many', n === 100);
+    out.classList.toggle('many', n >= 50);
     $('pull-close').classList.add('hidden');
     $('pull-skip').classList.remove('hidden');
     slot.style.display = '';
@@ -116,14 +125,14 @@ G.GachaUI = (() => {
     // La tragaperras (ui/slots.js) y luego las cartas.
     // La ×100 gira 10 veces: una por cada ×10, enseñando lo mejor de cada una.
     const rank = r => (r.shiny ? 100 : 0) + r.rarity * 10 + (r.isNew ? 1 : 0);
-    const spins = n === 100 ? Array.from({ length: 10 }, (_, k) => res.slice(k * 10, k * 10 + 10).reduce((a, b) => (rank(b) > rank(a) ? b : a))) : res;
+    const spins = n > 10 ? Array.from({ length: Math.min(10, n / 10) }, (_, k) => res.slice(k * n / Math.min(10, n / 10), (k + 1) * n / Math.min(10, n / 10)).reduce((a, b) => (rank(b) > rank(a) ? b : a))) : res;
     await G.Slots.play(slot, spins, n);
     G.Audio.sfx('burst', { rarity: best });
     slot.style.display = 'none';
 
     // En la ×100, un resumen arriba y las cartas de mejor a peor.
     let cards = res;
-    if (n === 100) {
+    if (n > 10) {
       cards = res.slice().sort((a, b) => rank(b) - rank(a));
       const news = res.filter(r => r.isNew).length, sh = res.filter(r => r.shiny).length, coins = res.reduce((a, r) => a + r.refund, 0);
       out.insertAdjacentHTML('beforeend', `<div class="pull-sum">${G.I18n.f('Nuevos: {x}', news)} · ${G.Icons.html('shiny', 14)} ${G.I18n.f('Shiny: {x}', sh)}
@@ -146,8 +155,8 @@ G.GachaUI = (() => {
       c.insertAdjacentHTML('beforeend', `<b>${r.shiny ? G.Icons.html('shiny', 12) + ' ' : ''}${mon.name}</b>${who}<div class="tag">${tag}</div>`);
       out.appendChild(c);
       if (skip) continue;
-      if (n < 100 || r.rarity >= 4 || r.shiny) G.Audio.sfx('reveal', { rarity: r.rarity });
-      await wait(n === 100 ? 30 : n === 10 ? 150 : 0);
+      if (n <= 10 || r.rarity >= 4 || r.shiny) G.Audio.sfx('reveal', { rarity: r.rarity });
+      await wait(n > 10 ? (n >= 100 ? 10 : 30) : 150);
     }
     $('pull-skip').classList.add('hidden');
     // La última que faltaba de la generación: su Amuleto Iris.

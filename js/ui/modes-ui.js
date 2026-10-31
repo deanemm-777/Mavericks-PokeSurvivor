@@ -39,7 +39,7 @@ G.ModesUI = (() => {
       });
       paint();
       const last = (G.Settings.get('lastMode')) || 'normal';
-      $('modes-list').innerHTML = G.Modes.LIST.map(m => `
+      $('modes-list').innerHTML = G.Modes.LIST.filter(m => !m.hidden).map(m => `
         <button class="menu-item mode-item${m.id === last ? ' last' : ''}" data-mode="${m.id}">
           <span class="mi-ico">${G.Icons.html(ICON[m.id], 26)}</span>${m.name}
           <small>${m.desc}</small><small class="mode-rec">${record(m.id)}</small>

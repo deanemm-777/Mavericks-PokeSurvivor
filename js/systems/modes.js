@@ -18,6 +18,7 @@ G.Modes = (() => {
     { id: 'normal',  name: 'Classic',  desc: 'Survive until Arceus\'s Judgment at 30:00.' },
     { id: 'fast',    name: 'Fast',     desc: 'Everything scales twice as fast. Arceus comes at 15:00. ×1.5 coins.' },
     { id: 'endless', name: 'Endless',  desc: 'No Judgment. Clear rounds for bonus picks, a legendary rift every 5 rounds and a boss every 25.' },
+    { id: 'dojo',    name: 'Training Dojo', desc: 'Try your moves, items and Mega Evolution on training dummies.', hidden: true },
     { id: 'waves',   name: 'Halloween Waves', desc: 'The Haunted Hollow at night. Defeat each round\'s Pokémon, ghost swarms every 4, Mega Darkrai every 25, and spooky objectives for candy.' }
   ];
   const BY = {};
@@ -41,7 +42,8 @@ G.Modes = (() => {
     diff = DIFFS[(restore && restore.diff) || G.Settings.get('difficulty')] || DIFFS.medium;
     round = 1; roundKills = 0; killsAtStart = 0; bossNo = 0; clearT = 0;
     if (restore) { round = restore.round || 1; roundKills = restore.roundKills || 0; bossNo = restore.bossNo || 0; }
-    if (G.Rift.setAuto) G.Rift.setAuto(mode !== 'endless' && mode !== 'waves');
+    if (G.Rift.setAuto) G.Rift.setAuto(mode !== 'endless' && mode !== 'waves' && mode !== 'dojo');
+    if (mode !== 'dojo' && G.Dojo) G.Dojo.stop();
     if (mode === 'waves') G.Waves.start(restore && restore.waves); else G.Waves.stop();
   }
 
@@ -83,10 +85,11 @@ G.Modes = (() => {
     get name() { return BY[mode].name; },
     get endless() { return mode === 'endless'; },
     get waves() { return mode === 'waves'; },
+    get dojo() { return mode === 'dojo'; },
     /** Modes without Arceus's Judgment. */
-    get noJudgment() { return mode === 'endless' || mode === 'waves'; },
+    get noJudgment() { return mode === 'endless' || mode === 'waves' || mode === 'dojo'; },
     get fast() { return mode === 'fast'; },
-    get coinMul() { return (mode === 'fast' ? 1.5 : 1) * diff.reward; },
+    get coinMul() { return mode === 'dojo' ? 0 : (mode === 'fast' ? 1.5 : 1) * diff.reward; },
     get diff() { return diff; },
     DIFFS,
     get round() { return mode === 'waves' ? G.Waves.round : round; },

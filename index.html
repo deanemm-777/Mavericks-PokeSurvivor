@@ -78,7 +78,7 @@
   ]
 }
 </script>
-<link rel="stylesheet" href="css/style.css?v=583bba0a13">
+<link rel="stylesheet" href="css/style.css?v=5ec57700e0">
 <script src="js/core/locales.js?v=fd491484e3"></script>
 <script src="js/noframe.js"></script>
 </head>
@@ -166,7 +166,8 @@
 
 <!-- ====== Menú principal ====== -->
 <section id="scr-menu" class="scr hidden">
-  <div id="build-tag" translate="no">build 82ba81</div>
+  <div id="build-tag" translate="no">build fa71df</div>
+  <div id="bonus-pill" class="bonus-pill hidden" translate="no"></div>
   <div class="menu-left">
     <div class="logo">
       <div class="t1">PokéSurvivor<span class="splash offline-hide">Folagor, Sekiam, PokeAlex: ¿un hueco?</span></div>
@@ -189,6 +190,8 @@
         <button class="menu-item" data-go="shop">Tienda Kecleon<small>Mentas, Cápsulas y MT</small></button>
         <button class="menu-item" data-go="mart" translate="no">Poké Mart<small>Teach any TM, any day</small></button>
         <button class="menu-item hidden" data-go="halloween" translate="no">Halloween Shop<small id="menu-hw-sub">Skins, Ghost Pokémon and tickets for candy</small></button>
+        <button class="menu-item" data-go="dojo" translate="no">Training Dojo<small>Try moves, items and Megas on dummies</small></button>
+        <button class="menu-item" data-go="movedex" translate="no">Move Dex<small>Every move, its stats at every level</small></button>
         <button class="menu-item" data-go="bag">Mochila<small id="menu-bag-sub">Vacía</small></button>
         <button class="menu-item" data-go="gacha">Gacha<small>9 regiones · Pokémon y shinies</small></button>
         <button class="menu-item" data-go="goals">Misiones<small id="menu-goals-sub">Misiones, logros y perfil</small></button>
@@ -534,11 +537,15 @@
           <p class="sub" id="gacha-owned" style="margin:0"></p>
           <div class="feat" id="gacha-feat"></div>
         </div>
-        <div class="row" style="margin-top:14px">
-          <button id="pull-10" class="btn gold grow" data-sfx="none">Tirar ×10 · <span id="cost-10"></span></button>
-          <button id="pull-10b" class="btn gold grow" data-sfx="none">Tirar ×10 · <span id="cost-10b"></span></button>
-          <button id="pull-100" class="btn gold grow" data-sfx="none">Tirar ×100 · <span id="cost-100"></span></button>
-          <button id="pull-100b" class="btn gold grow" data-sfx="none">Tirar ×100 · <span id="cost-100b"></span></button>
+        <div class="row pull-batch" id="pull-batch" style="margin-top:12px">
+          <span class="pull-batch-l">Tickets at once</span>
+          <button class="btn small" data-batch="1">1</button><button class="btn small" data-batch="5">5</button>
+          <button class="btn small" data-batch="10">10</button><button class="btn small" data-batch="max">Max</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button id="pull-10" class="btn gold grow" data-sfx="none"><span id="lbl-10">Pull ×10</span> · <span id="cost-10"></span></button>
+          <button id="pull-10b" class="btn gold grow" data-sfx="none"><span id="lbl-10b">Pull ×10</span> · <span id="cost-10b"></span></button>
+          <button id="pull-100" class="hidden"></button><button id="pull-100b" class="hidden"></button><span id="cost-100" class="hidden"></span><span id="cost-100b" class="hidden"></span>
         </div>
         <p class="note tickets-line" id="gacha-tickets"></p>
         <p class="note" id="gacha-pity"></p>
@@ -589,6 +596,15 @@
   <div class="box wide mart-box">
     <div class="row between"><h2 id="mart-title">Poké Mart</h2><button class="btn small ghost" data-back>Back</button></div>
     <div id="mart-body" class="mart-body"></div>
+  </div>
+</section>
+
+<!-- ====== Standalone: Move Dex (js/ui/movedex-ui.js) ====== -->
+<section id="scr-movedex" class="scr dim hidden" translate="no">
+  <div class="box wide movedex-box">
+    <div class="row between"><h2>Move Dex <small id="md-count" class="sub"></small></h2><button class="btn small ghost" data-back>Back</button></div>
+    <div class="row md-filters"><input id="md-q" type="search" placeholder="Search moves"><select id="md-type"></select><select id="md-kind"></select></div>
+    <div id="md-list" class="md-list"></div>
   </div>
 </section>
 
@@ -644,6 +660,6 @@
 </section>
 
 <!-- datos generados -->
-<script defer src="js/app.min.js?v=cfedebd4ad"></script>
+<script defer src="js/app.min.js?v=bf8ce4fe8d"></script>
 </body>
 </html>
