@@ -72,6 +72,7 @@ G.MenuUI = (() => {
 
   function open() {
     themeLine();
+    G.Camp.enter();
     setTimeout(bonusLine, 0);
     // Standalone: the Halloween Shop shows up from two weeks before until your candy is spent.
     const hw = document.querySelector('#scr-menu [data-go=halloween]');

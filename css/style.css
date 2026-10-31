@@ -1323,6 +1323,27 @@ body.skin .dojo-btn { left: calc(var(--sx) + 8px); top: calc(var(--sy) + 56px); 
 .mega-form small { display: block; }
 
 /* Bonus events (js/systems/bonus.js) */
-.bonus-pill { position: absolute; z-index: 5; left: calc(8px + env(safe-area-inset-left)); top: calc(74px + env(safe-area-inset-top)); padding: 3px 10px; border-radius: 999px;
+.bonus-pill { position: absolute; z-index: 5; left: calc(8px + env(safe-area-inset-left)); top: calc(126px + env(safe-area-inset-top)); padding: 3px 10px; border-radius: 999px;
   background: rgba(255,210,63,.18); border: 1px solid rgba(255,210,63,.6); color: var(--gold); font-size: 11px; font-weight: 800; pointer-events: none; }
 body.skin .bonus-pill { left: calc(var(--sx) + 6px); top: calc(var(--sy) + 34px); font-size: 9px; }
+
+/* ============ Camp main menu (js/ui/camp.js, update 40) ============ */
+.camp-dock, .camp-prompt, .camp-back { display: none; }
+body.camp #scr-menu { pointer-events: none; }
+body.camp #scr-menu .menu-right, body.camp #scr-menu .partner-card { display: none !important; }
+body.camp #scr-menu .logo .t1, body.camp #scr-menu .logo .t2 { display: none; }
+body.camp .camp-dock { display: flex; pointer-events: auto; position: absolute; left: 0; right: 0; bottom: calc(6px + env(safe-area-inset-bottom));
+  gap: 4px; padding: 6px 8px; overflow-x: auto; scrollbar-width: none; background: linear-gradient(transparent, rgba(5,9,20,.75)); }
+body.camp .camp-dock::-webkit-scrollbar { display: none; }
+.dock-btn { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 52px; padding: 5px 4px; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.15); background: rgba(20,30,55,.85); color: var(--ink); font-size: 11px; }
+.dock-btn small { font-size: 8px; color: var(--muted); white-space: nowrap; }
+.dock-btn.play { background: var(--gold); color: #1a1426; } .dock-btn.play small { color: #3a2a10; }
+body.camp .camp-prompt:not(.hidden) { display: block; pointer-events: auto; position: absolute; left: 50%; transform: translateX(-50%);
+  bottom: calc(86px + env(safe-area-inset-bottom)); padding: 6px 14px; border-radius: 999px; background: rgba(20,30,55,.92);
+  border: 2px solid var(--gold); color: var(--ink); font-weight: 800; cursor: pointer; }
+.camp-prompt b { display: inline-block; width: 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 50%; background: var(--gold); color: #1a1426; margin-right: 4px; font-size: 11px; }
+body:not(.camp) .camp-back { display: inline-block; margin-bottom: 6px; }
+body.skin.camp .camp-dock { bottom: 2px; padding: 4px 6px; }
+body.skin.camp .dock-btn { min-width: 44px; padding: 3px 2px; }
+body.skin.camp .camp-prompt:not(.hidden) { bottom: 66px; font-size: 12px; padding: 4px 10px; }

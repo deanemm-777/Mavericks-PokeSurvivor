@@ -933,7 +933,7 @@ G.Game = (() => {
     // Todo lo que tiene "pies" se ordena por Y: objetos, enemigos, jugador.
     const items = [];
     // Los planos (manantiales, trampas) siempre debajo de todo lo demás.
-    for (const p of G.World.visibleProps(cam)) items.push({ y: p.flat ? p.y - 4000 : p.y, prop: p });
+    for (const p of G.World.visibleProps(cam)) if (!(state === 'ui' && G.Camp.hides(p))) items.push({ y: p.flat ? p.y - 4000 : p.y, prop: p });
     for (const e of G.EnemyMgr.drawables(cam)) items.push({ y: e.y, ent: e });
     for (const e of extra) items.push({ y: e.y, ent: e });
     const rift = G.Rift.drawable();
@@ -1070,13 +1070,15 @@ G.Game = (() => {
     function step(dt) {
       t += dt;
       G.World.update(dt, G.Camera);
-      // Deriva lenta de la cámara.
-      G.Camera.x += Math.cos(t * 0.05) * 14 * dt;
-      G.Camera.y += Math.sin(t * 0.037) * 10 * dt;
-      G.Camera.follow(G.Camera.x, G.Camera.y, dt);
-
-      biomeT += dt;
-      if (biomeT > 30) { biomeT = 0; bi = (bi + 1) % 3; G.World.setBiome(G.Tiles.runBiome(bi)); }
+      if (G.Camp.active) G.Camp.update(dt);       // standalone (update 40): the camp, camera on your partner
+      else {
+        // Deriva lenta de la cámara.
+        G.Camera.x += Math.cos(t * 0.05) * 14 * dt;
+        G.Camera.y += Math.sin(t * 0.037) * 10 * dt;
+        G.Camera.follow(G.Camera.x, G.Camera.y, dt);
+        biomeT += dt;
+        if (biomeT > 30) { biomeT = 0; bi = (bi + 1) % 3; G.World.setBiome(G.Tiles.runBiome(bi)); }
+      }
 
       for (const wd of wanderers) {
         wd.t -= dt;
@@ -1111,9 +1113,9 @@ G.Game = (() => {
       ctx.save();
       ctx.scale(G.Camera.scale, G.Camera.scale);
       G.Camera.apply(ctx);
-      drawScene(G.Camera, wanderers);
+      drawScene(G.Camera, (G.Camp.active ? wanderers.filter(wd => Math.hypot(wd.x, wd.y) > 360) : wanderers).concat(G.Camp.drawables()));
       ctx.restore();
-      if (G.Halloween.on) G.World.drawNight(ctx, w, h, G.Camera, t);
+      if (G.Halloween.on) G.World.drawNight(ctx, w, h, G.Camera, t, G.Camp.lights());
       G.World.drawVignette(ctx, w, h);
     }
 

@@ -264,6 +264,15 @@ G.Pad = (() => {
     const l = Math.hypot(x, y);
     if (l > 1) { x /= l; y /= l; }
 
+    if (G.Camp && G.Camp.walking()) {
+      // The camp (ui/camp.js): the stick / d-pad walks your partner, A uses what's in front of it.
+      if (showing) hideFocus();
+      navDir = null;
+      vec = [x, y];
+      if (hit(BT.A)) G.Camp.interact();
+      if (hit(BT.START)) { const play = document.querySelector('#scr-menu [data-go=play]'); if (play) play.click(); }
+      return;
+    }
     if (uiMode()) {
       vec = [0, 0];
       // Mover la selección: al empujar, y repitiendo si se mantiene.
