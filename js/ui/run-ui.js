@@ -86,6 +86,7 @@ G.RunUI = (() => {
     $('lvl-reroll').classList.toggle('hidden', left <= 0);
     const box = $('cards');
     box.innerHTML = '';
+    document.querySelectorAll('.card-tip').forEach(t => t.remove());
     list.forEach((c, i) => {
       const el = document.createElement('div');
       el.className = 'card';
@@ -100,15 +101,52 @@ G.RunUI = (() => {
          <div class="txt"><div class="nm">${c.title} ${tag}</div><div class="ds">${c.desc}</div></div>
          <div class="key">${i + 1}</div>`;
       el.dataset.sfx = 'none';             // el juego pone su propio sonido al elegir
-      onTap(el, () => pick(i));
+      onTap(el, () => { if (el._lp) { el._lp = false; return; } pick(i); });
+      cardTip(el, c);
       box.appendChild(el);
     });
+  }
+
+  /*
+   * Standalone (update 40): a move card's tooltip, as in the menus: the move's
+   * numbers now and after this card. Hover with a mouse, or long-press on touch
+   * (a long press only shows it: it doesn't pick the card).
+   */
+  function cardTip(el, c) {
+    const m = /^(new|up):(.+)$/.exec(c.key || '');
+    if (!m || !G.Moves.BY_ID[m[2]]) return;
+    const id = m[2], pl = G.Game.player, have = pl && pl.moves.find(x => x.id === id);
+    const now = have ? have.lvl : 0, next = Math.min(G.Moves.BY_ID[id].maxLvl, now + 1);
+    const KEYS = [['dmg', 'Damage'], ['cd', 'Cooldown'], ['count', 'Count'], ['radius', 'Range'], ['dur', 'Duration'], ['pierce', 'Pierce'], ['amount', 'Power']];
+    const fmt = v => (Math.abs(v) >= 10 ? Math.round(v) : Math.round(v * 100) / 100);
+    const html = () => {
+      const a = now ? G.Moves.instance(id, now) : null, b = G.Moves.instance(id, next);
+      const rows = KEYS.filter(([k]) => typeof b[k] === 'number').map(([k, n]) =>
+        `<div><span>${n}</span><b>${a ? fmt(a[k]) + ' → ' : ''}${fmt(b[k])}</b></div>`).join('');
+      const d = G.Moves.BY_ID[id];
+      return `<b>${G.T(d.name, 'move')}</b> <small>${G.U.TYPE_NAME[d.type]} · ${d.kind} · Lv${next}</small><div class="ct-rows">${rows}</div>`;
+    };
+    let tip = null, lpT = 0;
+    const show = () => {
+      tip = document.createElement('div'); tip.className = 'card-tip'; tip.innerHTML = html();
+      document.body.appendChild(tip);
+      const r = el.getBoundingClientRect(), t = tip.getBoundingClientRect();
+      tip.style.left = Math.max(8, Math.min(innerWidth - t.width - 8, r.left + r.width / 2 - t.width / 2)) + 'px';
+      tip.style.top = (r.top - t.height - 6 > 8 ? r.top - t.height - 6 : r.bottom + 6) + 'px';
+    };
+    const hide = () => { clearTimeout(lpT); if (tip) { tip.remove(); tip = null; } };
+    el.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') show(); });
+    el.addEventListener('pointerleave', hide);
+    el.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') lpT = setTimeout(() => { el._lp = true; show(); }, 450); });
+    el.addEventListener('pointerup', () => { clearTimeout(lpT); if (tip && el._lp) setTimeout(hide, 1600); });
+    el.addEventListener('pointercancel', hide);
   }
 
   function pick(i) {
     if (!offers || !offers[i] || guarded()) return;
     const c = offers[i], cb = offerCb;
     offers = null; offerCb = null;
+    document.querySelectorAll('.card-tip').forEach(t => t.remove());
     $('lvl-reroll').classList.add('hidden');
     if (coopMode) {
       // Se queda la carta elegida a la vista mientras eligen los demás.

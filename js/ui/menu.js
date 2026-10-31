@@ -13,7 +13,8 @@ G.MenuUI = (() => {
   const SORTS = [['num', 'Nº'], ['name', 'Nombre'], ['rar', 'Rareza'], ['new', 'Recién conseguidos'], ['used', 'Más usados']];
 
   function init() {
-    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', shop: 'shop', bag: 'bag', gacha: 'ball4', goals: 'medal3', friends: 'friends', rank: 'trophy', settings: 'gear', theme: 'phone', mart: 'shop', halloween: 'candy', dojo: 'fist', movedex: 'book' };
+    G.EmotesUI.init();
+    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', shop: 'shop', bag: 'bag', gacha: 'ball4', goals: 'medal3', friends: 'friends', rank: 'trophy', settings: 'gear', theme: 'phone', mart: 'shop', halloween: 'candy', dojo: 'fist', movedex: 'book', emotes: 'heart' };
     document.querySelectorAll('#scr-menu [data-go]').forEach(b => {
       b.insertAdjacentHTML('afterbegin', `<span class="mi-ico">${G.Icons.html(ICON[b.dataset.go], 26)}</span>`);
       b.dataset.sfx = b.dataset.go === 'play' ? 'confirm' : 'click';
@@ -33,6 +34,7 @@ G.MenuUI = (() => {
         else if (go === 'halloween') G.MartUI.open('halloween');
         else if (go === 'dojo') G.Game.startRun(null, { mode: 'dojo' });
         else if (go === 'movedex') G.MoveDexUI.open();
+        else if (go === 'emotes') G.EmotesUI.open();
         else if (go === 'theme') {
           // Standalone build: Game Boy skin <-> full screen with the touch joystick.
           const full = G.Settings.get('theme') !== 'full';

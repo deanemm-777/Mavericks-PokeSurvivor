@@ -11,7 +11,7 @@
  */
 // BUILD is rewritten by tools/make_offline_list.js on every build, so this file's
 // bytes change with each version: that is what makes phones notice an update.
-const BUILD = 'cf6f16f52b';
+const BUILD = 'e7599ddd9e';
 importScripts('offline-files.js?v=' + BUILD);  // defines self.OFFLINE = { version, files: [...] }
 const CACHE = 'ps-offline-' + self.OFFLINE.version;
 const CORE = ['./', './index.html', './manifest.webmanifest'];
@@ -31,7 +31,7 @@ self.addEventListener('activate', e => {
       for (const k of old) {
         const prev = await caches.open(k);
         for (const req of await prev.keys()) {
-          if (/\/assets\//.test(req.url) && !(await now.match(req))) {
+          if ((/\/assets\//.test(req.url) || /\/portrait\//.test(req.url)) && !(await now.match(req))) {
             const res = await prev.match(req);
             if (res) await now.put(req, res);
           }
@@ -87,6 +87,17 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
+  // Emotes (SpriteCollab portraits): kept once fetched, for offline play.
+  if (url.hostname === 'raw.githubusercontent.com' && url.pathname.includes('/SpriteCollab/') && url.pathname.includes('/portrait/')) {
+    e.respondWith((async () => {
+      const c = await caches.open(CACHE);
+      const hit = await c.match(req.url);
+      if (hit) return hit;
+      try { const res = await fetch(req.url, { mode: 'cors' }); if (res.ok) c.put(req.url, res.clone()); return res; }
+      catch (err) { return Response.error(); }
+    })());
+    return;
+  }
   if (url.origin !== location.origin) return;
   if (req.mode === 'navigate') {
     e.respondWith((async () => {

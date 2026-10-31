@@ -197,6 +197,8 @@ G.Game = (() => {
 
     pl = new G.Player(mon, perks, snap ? !!snap.shiny : !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
     G.Bonus.runStart();
+    G.Plates.reset();
+    G.Eternatus.reset(snap && snap.eterna);
     pl.xpMul *= G.Modes.diff.xp * G.Bonus.xp;   // difficulty and bonus events (update 40)
     if (G.Modes.dojo) G.Dojo.start(pl);
     G.Orbs.reset();
@@ -893,6 +895,11 @@ G.Game = (() => {
     G.Weather.update(dt, ft, pl);
     G.Modes.tick(dt, pl);
     G.Mega.update(dt);
+    G.Plates.update(dt);
+    G.Emotes.update(dt);
+    if (G.Input.tap('keyg')) G.Emotes.openWheel();
+    G.Eternatus.update(dt, pl);
+    if (G.Input.tap('keyt') && G.Plates.shown(pl)) G.Plates.openPicker();
     if (!coop && !G.Modes.dojo && (cpT -= dt) <= 0) { cpT = 20; saveCheckpoint(); }
     G.FX.update(dt);
 
@@ -986,6 +993,7 @@ G.Game = (() => {
     ctx.scale(G.Camera.scale, G.Camera.scale);
     G.Camera.apply(ctx);
     drawScene(G.Camera, G.Coop.active ? [pl, ...G.Coop.puppets()] : [pl]);
+    if (pl) G.Emotes.drawAt(ctx, pl.x, pl.y - pl.bodyH);
     G.Projectiles.draw(ctx);
     G.Combat.drawAirFields(ctx);
     G.FX.draw(ctx);
@@ -999,6 +1007,7 @@ G.Game = (() => {
       G.HHDecor.drawNight(ctx, w, h, G.Camera, performance.now() / 1000, L);
     }
     G.Weather.draw(ctx, w, h, frameDt);
+    G.Eternatus.drawTint(ctx, w, h);
     G.World.drawVignette(ctx, w, h);
     // Niebla: la viñeta se cierra un poco (sin tapar el centro).
     const fog = G.Weather.vignette;
@@ -1070,6 +1079,7 @@ G.Game = (() => {
     function step(dt) {
       t += dt;
       G.World.update(dt, G.Camera);
+      G.Emotes.update(dt);
       if (G.Camp.active) G.Camp.update(dt);       // standalone (update 40): the camp, camera on your partner
       else {
         // Deriva lenta de la cámara.

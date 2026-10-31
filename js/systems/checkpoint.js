@@ -46,7 +46,9 @@ G.Checkpoint = (() => {
       p,
       moves: pl.moves.map(m => ({ id: m.id, lvl: m.lvl, ev: m.evolved ? 1 : 0, dealt: Math.round(m.dealt || 0), since: m.since || 0 })),
       slots: pl.slots.map(gr => gr.map(m => ids.get(m))),
-      active: pl.active
+      active: pl.active,
+      plates: pl.plates ? [...pl.plates] : null, plate: pl.plate || null,
+      eterna: G.Eternatus.state()
     };
   }
 
@@ -64,6 +66,7 @@ G.Checkpoint = (() => {
     pl.active = Math.min(Math.max(0, snap.active | 0), pl.slots.length - 1);
     pl.hp = Math.max(1, Math.min(pl.maxHp, pl.hp || pl.maxHp));
     pl.invuln = 2;
+    if (snap.plates && snap.plates.length) { pl.plates = new Set(snap.plates); if (snap.plate) G.Plates.equip(pl, snap.plate, true); }
   }
 
   const saved = () => (G.DB.save && G.DB.save.suspended) || null;

@@ -123,6 +123,9 @@ G.LevelUp = (() => {
       });
     }
 
+    // Standalone (update 40): Arceus's plates.
+    out.push(...G.Plates.cards(pl));
+
     return out;
   }
 

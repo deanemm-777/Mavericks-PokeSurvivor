@@ -158,7 +158,8 @@ G.SettingsUI = (() => {
     const nick = G.Social.me ? G.Social.me.name : (G.DB.user || '');
     const kind = G.DB.mode === 'local' ? 'Cuenta de este navegador' : G.DB.nameAccount ? 'Nombre y contraseña' : 'Google';
     box.innerHTML = section('Cuenta')
-      + `<div class="set-row"><div class="grow"><b>Apodo</b><small>Es único y no se puede cambiar.</small></div><span class="gold" translate="no">${esc(nick)}</span></div>`
+      + `<div class="set-row" translate="no"><div class="grow"><b>Username</b><small>You can change it once a day.</small></div>
+           <input id="set-name" maxlength="16" value="${esc(nick)}" style="width:120px"> <button class="btn small" id="set-name-ok">Save</button></div>`
       + `<div class="set-row"><div class="grow"><b>Tipo de cuenta</b></div><span>${esc(kind)}</span></div>`
       + `<div class="set-row"><div class="grow"><b>Partida</b></div><span>${esc(SYNC[st] || st)}</span></div>`
       + `<div class="row wrap" style="gap:8px;margin-top:12px">
@@ -176,6 +177,18 @@ G.SettingsUI = (() => {
     const lay = $('set-layout'); if (lay) lay.onclick = () => G.LayoutUI.open();
     box.querySelectorAll('[data-lang]').forEach(b => { b.onclick = () => { if (b.dataset.lang !== G.I18n.lang) G.I18n.set(b.dataset.lang); }; });
     const lo = $('set-login'); if (lo) lo.onclick = () => { close(); leave(); };
+    // Username (update 40): once a day.
+    const nm = $('set-name-ok');
+    if (nm) nm.onclick = () => {
+      const v = $('set-name').value.trim().replace(/[<>]/g, '').slice(0, 16), sv = G.DB.save;
+      if (!v || v === G.DB.user) return;
+      const last = sv.nameChangedAt || 0;
+      if (Date.now() - last < 864e5) { G.UI.toast('You can change your username again in ' + Math.ceil((864e5 - (Date.now() - last)) / 36e5) + ' h'); return; }
+      sv.nameChangedAt = Date.now();
+      G.DB.setName(v);
+      G.UI.toast('Your username is now ' + v);
+      render();
+    };
     const out = $('set-logout'); if (out) out.onclick = () => { close(); leave(); };
     const del = $('set-delete');
     if (del) del.onclick = async () => {

@@ -175,6 +175,11 @@ G.HUD = (() => {
       bx -= R * 2 + gap;
     };
     btn('Z', G.Mega.zCharge, G.Mega.zReady, '#ffd23f', () => G.Mega.zMove());
+    if (G.Emotes.wheel().length) btn('☺', 1, true, '#ffd23f', () => G.Emotes.openWheel());
+    if (G.Plates.shown(pl)) {
+      const ready = G.Plates.cd <= 0;
+      btn('PLATE', ready ? 1 : 1 - G.Plates.cd / G.Plates.CD, ready, G.U.TYPE_COLOR[pl.plate] || '#c9b8ff', () => G.Plates.openPicker());
+    }
     if (G.Mega.can) {
       const act = G.Mega.active ? G.Mega.megaT / G.Mega.MEGA_TIME : 0;
       btn('MEGA', G.Mega.megaCharge, G.Mega.megaReady, '#ff9df5', () => G.Mega.megaEvolve(), act);

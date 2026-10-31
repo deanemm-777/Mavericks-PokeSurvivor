@@ -28,6 +28,7 @@ G.Camp = (() => {
     { go: 'goals', name: 'Missions', x: 0, y: -205, r: 30, draw: drawBoard },
     { go: 'bag', name: 'Bag', x: -280, y: -170, r: 34, draw: drawTent },
     { go: 'movedex', name: 'Move Dex', x: 280, y: -170, r: 26, draw: drawBooks },
+    { go: 'emotes', name: 'Emotes', x: -88, y: -178, r: 22, draw: drawEmotes },
     { go: 'halloween', name: 'Halloween Shop', x: 0, y: 245, r: 30, draw: drawPumpkins, hw: true }
   ];
   let on = false, mate = null, px = 0, py = 90, tx = null, ty = null, pendingGo = null, near = null, t = 0;
@@ -111,6 +112,7 @@ G.Camp = (() => {
         else { vx = dx / d; vy = dy / d; }
       }
       if (G.Input.tap('enter') || G.Input.tap('space')) interact();
+      if (G.Input.tap('keyg')) G.Emotes.openWheel();
     }
     px += vx * SPEED * dt; py += vy * SPEED * dt;
     const d = Math.hypot(px, py);
@@ -166,7 +168,7 @@ G.Camp = (() => {
     if (!on || view() !== 'camp') return [];
     const out = [{ y: -1e6, draw: drawGround }];
     for (const o of objs()) out.push({ y: o.y, draw: ctx => { o.draw(ctx, o); label(ctx, o); } });
-    if (mate) out.push({ y: py, draw: ctx => { G.Sprites.drawShadow(ctx, mate.dex, px, py); mate.draw(ctx, px, py); } });
+    if (mate) out.push({ y: py, draw: ctx => { G.Sprites.drawShadow(ctx, mate.dex, px, py); mate.draw(ctx, px, py); G.Emotes.drawAt(ctx, px, py - 46); } });
     return out;
   }
   /** Lights for the Halloween night (World.drawNight): the campfire. */
@@ -342,6 +344,18 @@ G.Camp = (() => {
     rect(ctx, '#f2ead8', x - 16, y - 44, 15, 10); rect(ctx, '#f2ead8', x + 1, y - 44, 15, 10);   // open book
     rect(ctx, '#c0303e', x - 1, y - 44, 2, 10);
     for (let i = 0; i < 3; i++) { rect(ctx, '#b0a890', x - 14, y - 42 + i * 3, 11, 1); rect(ctx, '#b0a890', x + 3, y - 42 + i * 3, 11, 1); }
+  }
+
+  function drawEmotes(ctx, o) {
+    o.top = 66;
+    const { x, y } = o;
+    shadow(ctx, x, y, 16);
+    rect(ctx, '#4a3220', x - 2, y - 30, 4, 30);
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = '#1b1822'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x, y - 40, 14, 0, 6.2832); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(x, y - 40, 10, 0, 6.2832); ctx.fill();
+    rect(ctx, '#1b1822', x - 5, y - 44, 2, 3); rect(ctx, '#1b1822', x + 3, y - 44, 2, 3);
+    ctx.strokeStyle = '#1b1822'; ctx.beginPath(); ctx.arc(x, y - 40, 5, 0.3, Math.PI - 0.3); ctx.stroke();
   }
 
   function drawPumpkins(ctx, o) {

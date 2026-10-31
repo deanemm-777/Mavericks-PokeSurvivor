@@ -199,6 +199,7 @@
         <button class="menu-item hidden" data-go="halloween" translate="no">Halloween Shop<small id="menu-hw-sub">Skins, Ghost Pokémon and tickets for candy</small></button>
         <button class="menu-item" data-go="dojo" translate="no">Training Dojo<small>Try moves, items and Megas on dummies</small></button>
         <button class="menu-item" data-go="movedex" translate="no">Move Dex<small>Every move, its stats at every level</small></button>
+        <button class="menu-item" data-go="emotes" translate="no">Emotes<small>Packs, your collection and your wheel</small></button>
         <button class="menu-item" data-go="bag">Mochila<small id="menu-bag-sub">Vacía</small></button>
         <button class="menu-item" data-go="gacha">Gacha<small>9 regiones · Pokémon y shinies</small></button>
         <button class="menu-item" data-go="goals">Misiones<small id="menu-goals-sub">Misiones, logros y perfil</small></button>
@@ -607,6 +608,18 @@
   </div>
 </section>
 
+<!-- ====== Standalone: Emotes (js/ui/emotes-ui.js) ====== -->
+<section id="scr-emotes" class="scr dim hidden" translate="no">
+  <div class="box wide emotes-box">
+    <div class="row between"><h2>Emotes <small id="em-count" class="sub"></small></h2><button class="btn small ghost" data-back>Back</button></div>
+    <div class="row" style="gap:6px;flex-wrap:wrap"><button id="em-free" class="btn gold">Open your free pack</button><button id="em-buy" class="btn"></button></div>
+    <p class="sub" style="margin:6px 0 2px">Your wheel (hold <b>G</b> or tap ☺ in a run or the camp). Tap an emote to put it on or take it off.</p>
+    <div id="em-wheel" class="em-wheel"></div>
+    <input id="em-q" type="search" placeholder="Search your emotes" style="margin:6px 0">
+    <div id="em-grid" class="em-grid"></div>
+  </div>
+</section>
+
 <!-- ====== Standalone: Move Dex (js/ui/movedex-ui.js) ====== -->
 <section id="scr-movedex" class="scr dim hidden" translate="no">
   <div class="box wide movedex-box">
@@ -678,6 +691,8 @@
 <script defer src="js/data/sprites-meta.js"></script>
 <script defer src="js/data/megas.js"></script>
 <script defer src="js/data/extra-forms.js"></script>
+<script defer src="js/data/more-forms.js"></script>
+<script defer src="js/data/emotes.js"></script>
 <!-- núcleo -->
 <script defer src="js/core/firebase-config.js"></script>
 <script defer src="js/core/db.js"></script>
@@ -733,6 +748,9 @@
 <script defer src="js/systems/waves.js"></script>
 <script defer src="js/systems/dojo.js"></script>
 <script defer src="js/systems/bonus.js"></script>
+<script defer src="js/systems/plates.js"></script>
+<script defer src="js/systems/eternatus.js"></script>
+<script defer src="js/systems/emotes.js"></script>
 <script defer src="js/systems/mega.js"></script>
 <script defer src="js/systems/checkpoint.js"></script>
 <script defer src="js/systems/events.js"></script>
@@ -749,6 +767,7 @@
 <script defer src="js/net/ranking.js"></script>
 <!-- interfaz -->
 <script defer src="js/ui/icons.js"></script>
+<script defer src="js/data/item-icons.js"></script>
 <script defer src="js/ui/ui.js"></script>
 <script defer src="js/ui/hud.js"></script>
 <script defer src="js/ui/login.js"></script>
@@ -762,6 +781,7 @@
 <script defer src="js/ui/modes-ui.js"></script>
 <script defer src="js/ui/mart-ui.js"></script>
 <script defer src="js/ui/movedex-ui.js"></script>
+<script defer src="js/ui/emotes-ui.js"></script>
 <script defer src="js/ui/social-ui.js"></script>
 <script defer src="js/ui/ranking-ui.js"></script>
 <script defer src="js/ui/mod-ui.js"></script>

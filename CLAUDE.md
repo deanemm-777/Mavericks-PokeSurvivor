@@ -35,3 +35,9 @@ Personal, non-commercial build: no accounts, no cloud, no co-op, no ranking.
   - Menus: Training Dojo (`systems/dojo.js`, hidden mode 'dojo'), Move Dex (`ui/movedex-ui.js`), Mega tab in the Pokédex, gacha 1/5/10/Max batches, stats line above the move bar, bonus events (`systems/bonus.js`, weekend rotation, offline stand-in for Doofcraft's admin events), Iris Charm ×2 wild shiny odds for its region.
   - Camp main menu (`ui/camp.js`, setting 'menuView' camp|list): walk your partner (Input.axis / pad / tap to walk), objects open menus, dock at the bottom; `gamepad.js` routes the pad to the camp while it's walkable.
   - Not brought over (need Doofcraft's servers or systems this build doesn't have): co-op camp, friends/room codes, usernames, leaderboards, emotes, Eternatus, Arceus plate swapping, Mew's move list change.
+- Update 40, second pass (2026-10-31):
+  - Arceus plates (`systems/plates.js`): plate cards on level-up for Arceus; PLATE hotbar button / T swaps collected plates (60 s); forms 26001-26017 from `tools/fetch_more_forms.py` → `js/data/more-forms.js` (G.PLATES).
+  - Eternatus (`systems/eternatus.js`): Endless only, at 30:00 then every 30 min; Eternamax sprite 27890; first defeat per species = 3 extra ×10 tickets (save.eternaFirst).
+  - Emotes (`systems/emotes.js`, `ui/emotes-ui.js`, catalog `js/data/emotes.js` from `tools/fetch_emote_catalog.py`): SpriteCollab portraits loaded from raw.githubusercontent and cached by sw.js; wheel of 8, G / ☺ to send.
+  - PokeRogue held-item icons (`tools/fetch_item_icons.py` → `js/data/item-icons.js`, merged into G.Icons.UI).
+  - Level-up move card tooltips (run-ui.js cardTip), username change once a day (settings-ui.js).
