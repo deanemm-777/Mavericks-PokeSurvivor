@@ -1123,10 +1123,13 @@ G.Game = (() => {
       ctx.save();
       ctx.scale(G.Camera.scale, G.Camera.scale);
       G.Camera.apply(ctx);
-      drawScene(G.Camera, (G.Camp.active ? wanderers.filter(wd => Math.hypot(wd.x, wd.y) > 360) : wanderers).concat(G.Camp.drawables()));
+      drawScene(G.Camera, (G.Camp.active ? [] : wanderers).concat(G.Camp.drawables()));
       ctx.restore();
       if (G.Halloween.on) G.World.drawNight(ctx, w, h, G.Camera, t, G.Camp.lights());
       G.World.drawVignette(ctx, w, h);
+      if (G.Camp.active) {            // the camp's labels, above the night
+        ctx.save(); ctx.scale(G.Camera.scale, G.Camera.scale); G.Camera.apply(ctx); G.Camp.drawLabels(ctx); ctx.restore();
+      }
     }
 
     /** Al volver de una run, recupera el mundo del menú. */

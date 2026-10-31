@@ -1346,6 +1346,8 @@ body.camp .camp-prompt:not(.hidden) { display: block; pointer-events: auto; posi
 body:not(.camp) .camp-back { display: inline-block; margin-bottom: 6px; }
 body.skin.camp .camp-dock { bottom: 2px; padding: 4px 6px; }
 body.skin.camp .dock-btn { min-width: 44px; padding: 3px 2px; }
+/* The PC's second choice (Move Dex) in the prompt. */
+.camp-alt { margin-left: 4px; color: var(--muted); text-decoration: underline; }
 body.skin.camp .camp-prompt:not(.hidden) { bottom: 66px; font-size: 12px; padding: 4px 10px; }
 
 /* Level-up move card tooltip (run-ui.js cardTip, update 40) */

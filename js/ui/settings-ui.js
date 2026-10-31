@@ -134,6 +134,7 @@ G.SettingsUI = (() => {
              <li><b>Datos de los Pokémon:</b> PokéAPI.</li>
              <li><b>Música y sonidos:</b> originales, generados por el propio juego.</li>
              <li><b>Fuente:</b> Pixelify Sans (OFL).</li>
+             <li><b>Camp:</b> layout and art from PokéSurvivor Doofcraft Edition; campfire, benches and mailbox from Serene Village by LimeZu (CC BY 4.0).</li>
            </ul>`
         + `<div class="row wrap" style="justify-content:center;gap:8px">
              ${window.PS_PAGES ? `<a class="btn small" href="${G.I18n.lang === 'en' ? 'en/guide/' : 'guia/'}" target="_blank">Guía y preguntas</a>

@@ -1,42 +1,144 @@
 /* ============ camp.js — the camp main menu (standalone build, Doofcraft update 40) ============
  *
- * The main menu is a camp you walk around as your partner. Walk up to something
- * and interact (A, Enter / Space, or tap the prompt) to open its menu, or just
- * tap it. Every menu is still one tap away in the dock along the bottom, and
- * "☰" switches back to the classic list menu (the choice is remembered).
+ * The main menu is Doofcraft's camp, walked around as your partner, with
+ * Doofcraft's own art and layout (world/camp-art.js). Walk up to something and
+ * interact (A, Enter / Space, or tap the prompt) to open its menu, or just tap
+ * it. Every menu is still one tap away in the dock along the bottom, and "☰"
+ * switches back to the classic list menu (the choice is remembered).
  *
- *   Campfire          Play                Kecleon's stall    Kecleon Shop
- *   PC                Pokémon             Poké Mart counter  Poké Mart
- *   Training post     Upgrades            Capsule machine    Gacha
- *   Hitmonlee         Training Dojo       Notice board       Missions
- *   Tent              Bag                 Book stand         Move Dex
- *   Pumpkin stand     Halloween Shop (while it's open)
+ *   Platform               Play (step on it)
+ *   Campfire and benches   Emotes
+ *   Kecleon's stall        Kecleon Shop
+ *   Blue stall             Poké Mart
+ *   Pumpkaboo's stall      Halloween Shop (while it's open)
+ *   PC (Porygon)           Pokémon, or the Move Dex
+ *   Mailbox                Bag
+ *   Slot machine (Meowth)  Gacha
+ *   Job board              Missions
+ *   Hall of Fame statue    Upgrades
+ *   Dojo (Hitmonchan)      Training Dojo
  *
+ * Coordinates: Doofcraft's camp units (2 per art px, 32 per tile); the camp is
+ * drawn shifted by (OX, OY) so the campfire sits at the world's origin.
  * Moving: the d-pad / stick / arrow keys / WASD, or tap the ground to walk there.
  */
 G.Camp = (() => {
-  const R = 300;                  // walkable radius around the campfire
-  const SPEED = 125;
+  const A = G.CampArt, HUB = A.HUB;
+  const OX = -752, OY = -500;
+  const SPEED = 230, BODY = 10;
   const OBJ = [
-    { go: 'play', name: 'Play', x: 0, y: 10, r: 34, draw: drawFire },
-    { go: 'dex', name: 'Pokémon', x: -170, y: -120, r: 30, draw: drawPC },
-    { go: 'upgrades', name: 'Upgrades', x: 170, y: -120, r: 28, draw: drawPost },
-    { go: 'shop', name: 'Kecleon Shop', x: -250, y: 40, r: 34, draw: drawKecleon, npc: 352 },
-    { go: 'mart', name: 'Poké Mart', x: 250, y: 40, r: 34, draw: drawMart },
-    { go: 'gacha', name: 'Gacha', x: -150, y: 175, r: 28, draw: drawGacha },
-    { go: 'dojo', name: 'Training Dojo', x: 150, y: 175, r: 30, draw: drawDojo, npc: 106 },
-    { go: 'goals', name: 'Missions', x: 0, y: -205, r: 30, draw: drawBoard },
-    { go: 'bag', name: 'Bag', x: -280, y: -170, r: 34, draw: drawTent },
-    { go: 'movedex', name: 'Move Dex', x: 280, y: -170, r: 26, draw: drawBooks },
-    { go: 'emotes', name: 'Emotes', x: -88, y: -178, r: 22, draw: drawEmotes },
-    { go: 'halloween', name: 'Halloween Shop', x: 0, y: 245, r: 30, draw: drawPumpkins, hw: true }
+    { id: 'campfire', kind: 'campfire', go: 'emotes', name: 'Emotes', x: 23.5, y: 15.6 },
+    { id: 'mart', kind: 'stall', go: 'shop', name: 'Kecleon Shop', x: 5, y: 12, w: 5, npc: { dex: 352, x: 7.5, y: 13.45, dir: 0 } },
+    { id: 'event-shop', kind: 'stall', go: 'halloween', name: 'Halloween Shop', x: 6, y: 18.2, w: 4, hw: true, npc: { dex: 710, x: 8, y: 19.65, dir: 0 } },
+    { id: 'pokemart', kind: 'stall', go: 'mart', name: 'Poké Mart', x: 36.8, y: 11.8, w: 5 },
+    { id: 'pc', kind: 'pc', go: 'dex', name: 'Pokémon', alt: { go: 'movedex', name: 'Move Dex' }, x: 32, y: 12.4, npc: { dex: 137, x: 34.6, y: 14.3, dir: 6 } },
+    { id: 'mailbox', kind: 'mailbox', go: 'bag', name: 'Bag', x: 18.3, y: 11.6 },
+    { id: 'gacha', kind: 'gacha', go: 'gacha', name: 'Gacha', x: 13.5, y: 19.4, npc: { dex: 52, x: 12.7, y: 22.3, dir: 2 } },
+    { id: 'board', kind: 'board', go: 'goals', name: 'Missions', x: 17.6, y: 20.4 },
+    { id: 'statue', kind: 'statue', go: 'upgrades', name: 'Upgrades', x: 27.6, y: 20.6 },
+    { id: 'dojo', kind: 'dojo', go: 'dojo', name: 'Training Dojo', x: 36, y: 20, w: 7, h: 6, npc: { dex: 107, x: 39, y: 23.2, dir: 0 } }
   ];
+  const PLAY = { id: 'platform', go: 'play', name: 'Play' };
+  const PL = { cx: Math.round(HUB.platform.x * 16), cy: Math.round(HUB.platform.y * 16), rx: Math.round(HUB.platform.rx * 16), ry: Math.round(HUB.platform.ry * 16) };
   let stick = [0, 0];         // on-screen joystick (full-screen theme)
-  let on = false, mate = null, px = 0, py = 90, tx = null, ty = null, pendingGo = null, near = null, t = 0;
+  let on = false, mate = null, px = HUB.spawn.x * 32, py = HUB.spawn.y * 32, tx = null, ty = null, pendingGo = null, near = null, t = 0;
   const npcs = {};
 
   const view = () => (G.Settings.get('menuView') || 'camp');
-  const objs = () => OBJ.filter(o => !o.hw || (G.MartUI && G.MartUI.hwVisible()));
+  const hwOpen = () => !!(G.MartUI && G.MartUI.hwVisible());
+  const objs = () => OBJ.filter(o => !o.hw || hwOpen());
+
+  // ---------------- shapes (Doofcraft's, in art px relative to the object) ----------------
+  const rects = (o, list) => list.map(([x, y, w, h]) => ({ x: (o.x * 16 + x) * 2, y: (o.y * 16 + y) * 2, w: w * 2, h: h * 2 }));
+  function solids(o) {
+    const w = (o.w || 1) * 16, h = (o.h || 1) * 16;
+    switch (o.kind) {
+      case 'campfire': return rects(o, [[-7, -3, 14, 8], [-38, -12, 16, 26], [22, -12, 16, 26]]);
+      case 'stall': return rects(o, [[0, -14, w, 60]]);
+      case 'pc': return rects(o, [[-2, 12, 36, 14]]);
+      case 'mailbox': return rects(o, [[5, 10, 6, 5]]);
+      case 'gacha': return rects(o, [[0, 34, 44, 16]]);
+      case 'board': return rects(o, [[2, 24, 44, 10]]);
+      case 'statue': return rects(o, [[0, 20, 28, 14]]);
+      case 'dojo': return rects(o, [[-16, 4, w + 35, h]]);
+    }
+    return [];
+  }
+  function reach(o) {
+    switch (o.kind) {
+      case 'campfire': return rects(o, [[-22, -16, 44, 32]])[0];
+      case 'mailbox': return rects(o, [[2, 2, 12, 13]])[0];
+      case 'pc': return rects(o, [[-10, 0, 52, 34]])[0];
+      case 'gacha': return rects(o, [[-8, 20, 60, 38]])[0];
+      default: return solids(o)[0];
+    }
+  }
+  const rectDist = (r, x, y) => Math.hypot(Math.max(r.x - x, 0, x - (r.x + r.w)), Math.max(r.y - y, 0, y - (r.y + r.h)));
+  function artOf(o) {
+    switch (o.kind) {
+      case 'pc': return A.pc();
+      case 'gacha': return A.slots();
+      case 'board': return A.board();
+      case 'statue': return A.statue();
+      case 'dojo': return A.dojo(o);
+      case 'stall': return A.stallFront(o);
+    }
+    return null;
+  }
+  /** Where the object is on screen (for taps and labels), in camp units. */
+  function bounds(o) {
+    const a = artOf(o), w = a ? a.img.width : 16, h = a ? a.img.height : 16, ox = a ? a.ox : 0, oy = a ? a.oy : 0;
+    if (o.kind === 'campfire') return { x: (o.x * 16 - 38) * 2, y: (o.y * 16 - 16) * 2, w: 152, h: 64 };
+    if (o.kind === 'stall') return { x: o.x * 32, y: (o.y * 16 - 14) * 2, w: (o.w || 5) * 32, h: 120 };
+    return { x: (o.x * 16 - ox) * 2, y: (o.y * 16 - oy) * 2, w: w * 2, h: h * 2 };
+  }
+
+  // ---------------- collisions (Doofcraft's) ----------------
+  const platTop = (x, y) => x * x / (PL.rx * PL.rx) + y * y / (PL.ry * PL.ry) < 1;
+  const onPlatform = (x, y) => platTop(x / 2 - PL.cx, y / 2 - PL.cy);
+  function inFace(x, y) {
+    const a = x / 2 - PL.cx, b = y / 2 - PL.cy;
+    return b > 0 && Math.abs(a) > 30 && !platTop(a, b) && platTop(a, b - 8);
+  }
+  let solidList = [], circles = [], solidHw = null;
+  function buildSolids() {
+    const hw = hwOpen();
+    if (hw === solidHw) return;
+    solidHw = hw;
+    solidList = []; circles = [];
+    for (const o of objs()) { solidList.push(...solids(o)); if (o.npc) circles.push({ x: o.npc.x * 32, y: o.npc.y * 32, r: 14 }); }
+    for (const p of HUB.props) if (p.type !== 'grass') circles.push({ x: p.x * 32, y: p.y * 32 - 4, r: (p.type === 'rock' ? 8 : 6) * 2 });
+  }
+  function blocked(x, y, r = BODY) {
+    for (let i = 0; i < 9; i++) {
+      const a = i / 8 * Math.PI * 2, sx = i === 8 ? x : x + Math.cos(a) * r, sy = i === 8 ? y : y + Math.sin(a) * r;
+      if (A.tileAt(Math.floor(sx / 32), Math.floor(sy / 32)) === 'wall' || inFace(sx, sy)) return true;
+    }
+    for (const s of solidList) if (rectDist(s, x, y) < r) return true;
+    for (const c of circles) if (Math.hypot(c.x - x, c.y - y) < c.r + r) return true;
+    return false;
+  }
+  const SLIDE = [0.35, -0.35, 0.7, -0.7, 1.05, -1.05];
+  function move(dx, dy) {
+    const n = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 4)), sx = dx / n, sy = dy / n;
+    for (let k = 0; k < n; k++) {
+      const ox = px, oy = py;
+      if (!blocked(px + sx, py)) px += sx;
+      if (!blocked(px, py + sy)) py += sy;
+      if (px === ox && py === oy) {
+        for (const a of SLIDE) {
+          const c = Math.cos(a), rx = (sx * Math.cos(a) - sy * Math.sin(a)) * c, ry = (sx * Math.sin(a) + sy * Math.cos(a)) * c;
+          if (!blocked(px + rx, py + ry)) { px += rx; py += ry; break; }
+        }
+      }
+    }
+  }
+  function nearest() {
+    if (onPlatform(px, py)) return PLAY;
+    let best = null, bd = 28;
+    for (const o of objs()) { const d = rectDist(reach(o), px, py); if (d <= bd) { bd = d; best = o; } }
+    return best;
+  }
 
   /** The menu is showing the camp (not the list) and nothing is open over it. */
   function walking() {
@@ -58,8 +160,10 @@ G.Camp = (() => {
       mate.loop('Idle');
       G.Sprites.preload([s.partner], 4000, shiny);
     }
-    for (const o of OBJ) if (o.npc && !npcs[o.npc] && G.SPRITE_META[o.npc]) {
-      npcs[o.npc] = new G.Sprites.Animator(o.npc, 1); npcs[o.npc].loop('Idle'); npcs[o.npc].dir = 0;
+    const want = OBJ.filter(o => o.npc && G.SPRITE_META[o.npc.dex]).map(o => o.npc.dex);
+    G.Sprites.preload(want, 4000);
+    for (const o of OBJ) if (o.npc && !npcs[o.id] && G.SPRITE_META[o.npc.dex]) {
+      const a = new G.Sprites.Animator(o.npc.dex, 1); a.loop('Idle'); a.dir = o.npc.dir; npcs[o.id] = a;
     }
     applyView();
   }
@@ -68,10 +172,8 @@ G.Camp = (() => {
     document.body.classList.toggle('camp', view() === 'camp');
     const d = document.getElementById('camp-dock');
     if (d && !d.dataset.built) buildDock(d);
-    const p = document.getElementById('camp-prompt');
-    if (p) p.onclick = interact;
     wireStick();
-    if (d) d.querySelectorAll('[data-dgo=halloween]').forEach(b => b.classList.toggle('hidden', !(G.MartUI && G.MartUI.hwVisible())));
+    if (d) d.querySelectorAll('[data-dgo=halloween]').forEach(b => b.classList.toggle('hidden', !hwOpen()));
   }
 
   function setView(v) { G.Settings.set('menuView', v); applyView(); G.Audio.sfx('click'); }
@@ -85,24 +187,39 @@ G.Camp = (() => {
       return `<button class="dock-btn${go === 'play' ? ' play' : ''}${b.classList.contains('offline-hide') ? ' offline-hide' : ''}" data-dgo="${go}" title="${label}">
         ${ico ? ico.innerHTML : ''}<small>${label}</small></button>`;
     }).join('') + `<button class="dock-btn" id="camp-list" title="List menu">☰<small>List</small></button>`;
-    d.querySelectorAll('[data-dgo]').forEach(b => {
-      b.onclick = () => { const src = document.querySelector(`#scr-menu .menu-list [data-go="${b.dataset.dgo}"]`); if (src) src.click(); };
-    });
+    d.querySelectorAll('[data-dgo]').forEach(b => { b.onclick = () => openGo(b.dataset.dgo); });
     d.querySelector('#camp-list').onclick = () => setView('list');
     const back = document.getElementById('camp-back');
     if (back) back.onclick = () => setView('camp');
   }
 
-  function open(o) {
-    const src = document.querySelector(`#scr-menu .menu-list [data-go="${o.go}"]`);
+  function openGo(go) {
+    const src = document.querySelector(`#scr-menu .menu-list [data-go="${go}"]`);
     if (src) src.click();
   }
+  const open = o => openGo(o.go);
   function interact() { if (near) open(near); }
+
+  /** The "A Pokémon" prompt; the PC also offers the Move Dex. */
+  function showPrompt() {
+    const p = document.getElementById('camp-prompt');
+    if (p) {
+      p.classList.toggle('hidden', !near);
+      if (near) {
+        p.innerHTML = `<span data-pgo="${near.go}"><b>A</b> ${near.name}</span>` +
+          (near.alt ? ` <span class="camp-alt" data-pgo="${near.alt.go}">· ${near.alt.name}</span>` : '');
+        p.querySelectorAll('[data-pgo]').forEach(s => { s.onclick = e => { e.stopPropagation(); G.Audio.sfx('click'); openGo(s.dataset.pgo); }; });
+      }
+    }
+    const act = document.getElementById('camp-act');
+    if (act) act.classList.toggle('ready', !!near);
+  }
 
   /** Each frame while the menu backdrop runs (game.js Backdrop). */
   function update(dt) {
     if (!on) return;
     t += dt;
+    buildSolids();
     const walk = walking();
     let vx = 0, vy = 0;
     if (walk) {
@@ -116,36 +233,32 @@ G.Camp = (() => {
       if (G.Input.tap('enter') || G.Input.tap('space')) interact();
       if (G.Input.tap('keyg')) G.Emotes.openWheel();
     }
-    px += vx * SPEED * dt; py += vy * SPEED * dt;
-    const d = Math.hypot(px, py);
-    if (d > R) { px *= R / d; py *= R / d; }
-    // Bump around the objects.
-    for (const o of objs()) {
-      const ox = px - o.x, oy = py - o.y, od = Math.hypot(ox, oy), min = o.r * 0.8;
-      if (od < min && od > 0.01) { px = o.x + ox / od * min; py = o.y + oy / od * min; }
+    const m = Math.hypot(vx, vy);
+    if (m > 0.15) {
+      const k = Math.min(1, m) / m;
+      const bx = px, by = py;
+      move(vx * k * SPEED * dt, vy * k * SPEED * dt);
+      // Walking to a tapped spot and stuck against something: stop there.
+      if (tx != null && px === bx && py === by) {
+        tx = ty = null;
+        if (pendingGo) { const o = pendingGo; pendingGo = null; if (rectDist(reach(o), px, py) < 60) open(o); }
+      }
     }
     if (mate) {
-      const moving = vx || vy;
+      const moving = m > 0.15;
       if (moving) mate.dir = G.Sprites.dirFromAngle(Math.atan2(vy, vx));
       mate.loop(moving ? 'Walk' : 'Idle');
       mate.update(dt);
     }
     for (const k in npcs) npcs[k].update(dt);
-    // Camera on the partner.
-    G.Camera.follow(px, py - 20, dt);
+    // Camera on the partner, kept inside the camp.
+    const cam = G.Camera, mw = HUB.width * 32, mh = HUB.height * 32;
+    // (A little room above the top, so the HUD doesn't cover you up there.)
+    const clamp = (v, lo, hi) => (hi < lo ? (lo + hi) / 2 : Math.max(lo, Math.min(hi, v)));
+    G.Camera.follow(clamp(px, cam.w / 2, mw - cam.w / 2) + OX, clamp(py - 20, cam.h / 2 - 90, mh - cam.h / 2) + OY, dt);
     // The nearest thing you can use.
-    let best = null, bd = Infinity;
-    for (const o of objs()) { const dd = Math.hypot(px - o.x, py - o.y) - o.r; if (dd < 46 && dd < bd) { bd = dd; best = o; } }
-    if (best !== near) {
-      near = best;
-      const p = document.getElementById('camp-prompt');
-      if (p) {
-        p.classList.toggle('hidden', !near);
-        if (near) p.innerHTML = `<b>A</b> ${near.name}`;
-      }
-      const act = document.getElementById('camp-act');
-      if (act) act.classList.toggle('ready', !!near);
-    }
+    const best = walk ? nearest() : near;
+    if (best !== near) { near = best; showPrompt(); }
   }
 
   /*
@@ -164,8 +277,8 @@ G.Camp = (() => {
       const d = Math.hypot(dx, dy), max = R0 * 0.6;
       if (d > max) { dx *= max / d; dy *= max / d; }
       knob.style.transform = `translate(${dx}px, ${dy}px)`;
-      const m = Math.hypot(dx, dy) / max;
-      stick = m < 0.18 ? [0, 0] : [dx / max, dy / max];
+      const mm = Math.hypot(dx, dy) / max;
+      stick = mm < 0.18 ? [0, 0] : [dx / max, dy / max];
     };
     const end = e => { if (e.pointerId !== id) return; id = null; stick = [0, 0]; knob.style.transform = ''; el.classList.remove('on'); };
     el.addEventListener('pointerdown', e => { e.preventDefault(); id = e.pointerId; el.setPointerCapture(id); el.classList.add('on'); tx = ty = null; pendingGo = null; set(e.clientX, e.clientY); });
@@ -178,227 +291,114 @@ G.Camp = (() => {
   function onTap(e) {
     if (!walking() || e.target.id !== 'game') return;
     const cv = e.target, r = cv.getBoundingClientRect(), cam = G.Camera;
-    const wx = cam.left() + (e.clientX - r.left) / cam.scale, wy = cam.top() + (e.clientY - r.top) / cam.scale;
+    const wx = cam.left() + (e.clientX - r.left) / cam.scale - OX, wy = cam.top() + (e.clientY - r.top) / cam.scale - OY;
     let hit = null;
-    for (const o of objs()) if (Math.hypot(wx - o.x, wy - (o.y - 20)) < o.r + 26) hit = o;
+    for (const o of objs()) { const b = bounds(o); if (wx >= b.x && wx <= b.x + b.w && wy >= b.y && wy <= b.y + b.h) hit = o; }
+    if (!hit && onPlatform(wx, wy)) {
+      if (onPlatform(px, py)) { open(PLAY); return; }
+      tx = PL.cx * 2; ty = PL.cy * 2 + 8; pendingGo = PLAY; return;
+    }
     if (hit) {
-      if (Math.hypot(px - hit.x, py - hit.y) < hit.r + 50) { open(hit); return; }
-      const a = Math.atan2(py - hit.y, px - hit.x);
-      tx = hit.x + Math.cos(a) * (hit.r + 18); ty = hit.y + Math.sin(a) * (hit.r + 18); pendingGo = hit;
+      const rr = reach(hit);
+      if (rectDist(rr, px, py) < 40) { open(hit); return; }
+      tx = rr.x + rr.w / 2; ty = rr.y + rr.h + 22; pendingGo = hit;
     } else { tx = wx; ty = wy; pendingGo = null; }
   }
   addEventListener('pointerdown', onTap);
 
-  /** World props under the camp are hidden (game.js drawScene). */
-  function hides(p) { return on && view() === 'camp' && Math.hypot(p.x, p.y) < R + 70; }
+  /** World props are hidden while the camp covers the screen (game.js drawScene). */
+  function hides() { return on && view() === 'camp'; }
 
   // ---------------- drawing ----------------
 
+  function platformLight() { return onPlatform(px, py) ? 'gold' : 'idle'; }
+
+  /** Things to draw, y-sorted with the rest of the scene (world y). */
   function drawables() {
     if (!on || view() !== 'camp') return [];
-    const out = [{ y: -1e6, draw: drawGround }];
-    for (const o of objs()) out.push({ y: o.y, draw: ctx => { o.draw(ctx, o); label(ctx, o); } });
-    if (mate) out.push({ y: py, draw: ctx => { G.Sprites.drawShadow(ctx, mate.dex, px, py); mate.draw(ctx, px, py); G.Emotes.drawAt(ctx, px, py - 46); } });
+    const W = (y, draw) => ({ y: y + OY, draw: ctx => { ctx.save(); ctx.translate(OX, OY); draw(ctx); ctx.restore(); } });
+    const out = [W(-1e7, ctx => {
+      ctx.fillStyle = '#1d2a1c'; ctx.fillRect(-4000, -4000, HUB.width * 32 + 8000, HUB.height * 32 + 8000);
+      A.drawGround(ctx);
+      A.art(ctx, A.platform(PL.rx, PL.ry, platformLight()), PL.cx, PL.cy);
+    })];
+    for (const o of objs()) queueObject(o, out, W);
+    for (const p of HUB.props) {
+      const k = p.type + p.variant, s = SHEETSZ[k];
+      if (!s) continue;
+      const x = p.x * 16, y = p.y * 16;
+      out.push(W(y * 2, ctx => A.piece(ctx, k, x - s[0] / 2, y - s[1] + 2)));
+    }
+    for (const o of objs()) {
+      const a = npcs[o.id];
+      if (a) out.push(W(o.npc.y * 32, ctx => { G.Sprites.drawShadow(ctx, a.dex, o.npc.x * 32, o.npc.y * 32); a.draw(ctx, o.npc.x * 32, o.npc.y * 32); }));
+    }
+    if (mate) out.push(W(py, ctx => { G.Sprites.drawShadow(ctx, mate.dex, px, py); mate.draw(ctx, px, py); G.Emotes.drawAt(ctx, px, py - 46); }));
     return out;
   }
-  /** Lights for the Halloween night (World.drawNight): the campfire. */
+  const SHEETSZ = { tree0: [30, 40], tree1: [30, 40], tree2: [30, 40], rock0: [22, 17], rock1: [22, 17], rock2: [22, 17], grass0: [20, 17], grass1: [20, 17] };
+
+  function queueObject(o, out, W) {
+    const x = o.x * 16, y = o.y * 16;
+    switch (o.kind) {
+      case 'dojo':
+        out.push(W(-1e6, ctx => A.art(ctx, A.dojo(o), x, y)));
+        return;
+      case 'stall':
+        out.push(W((y - 20) * 2, ctx => A.art(ctx, A.stallBack(o), x, y)));
+        out.push(W((y + 34) * 2, ctx => A.art(ctx, A.stallFront(o), x, y)));
+        return;
+      case 'campfire':
+        out.push(W((y + 12) * 2, ctx => { A.piece(ctx, 'benchL', x - 38, y - 16); A.piece(ctx, 'benchR', x + 22, y - 16); }));
+        out.push(W((y - 3) * 2, ctx => {
+          const g = ctx.createRadialGradient(x * 2, y * 2, 2, x * 2, y * 2, 88);
+          g.addColorStop(0, 'rgba(255,190,90,.38)'); g.addColorStop(1, 'rgba(255,190,90,0)');
+          ctx.fillStyle = g; ctx.fillRect((x - 44) * 2, (y - 44) * 2, 176, 176);
+          if (!A.piece(ctx, 'fire', x - 8, y - 8, (Math.floor(t * 8) % 4) * 16)) A.piece(ctx, 'fireOff', x - 8, y - 8);
+        }));
+        return;
+      case 'mailbox':
+        out.push(W((y + 15) * 2, ctx => { A.piece(ctx, 'mailEmpty', x, y); }));
+        return;
+      default: {
+        const a = artOf(o);
+        if (a) out.push(W((y - a.oy + a.img.height - 2) * 2, ctx => A.art(ctx, a, x, y)));
+      }
+    }
+  }
+
+  function anchor(o) { const b = bounds(o); return [o.kind === 'gacha' ? b.x + 40 : b.x + b.w / 2, b.y - 6]; }
+
+  function tag(ctx, text, x, y, hot, big) {
+    ctx.font = (hot || big ? '700 ' : '400 ') + (big ? 14 : 12) + 'px Pixelify, "Segoe UI", system-ui, sans-serif';
+    const w = Math.ceil(ctx.measureText(text).width) + 12, l = Math.round(x - w / 2), tp = Math.round(y - 18);
+    ctx.fillStyle = hot ? '#ffd65c' : 'rgba(20,16,18,.8)'; ctx.fillRect(l, tp, w, 18);
+    ctx.fillStyle = hot ? '#141012' : big ? '#ffd65c' : '#f2e9d8';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(text, Math.round(x), tp + 10);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  }
+  function drawLabels(ctx) {
+    if (!on || view() !== 'camp') return;
+    ctx.save(); ctx.translate(OX, OY);
+    // Labels stay the same size on screen whatever the zoom.
+    const s = 1 / G.Camera.scale * Math.min(1.4, Math.max(0.8, G.Camera.scale));
+    const at = (text, x, y, hot, big) => { ctx.save(); ctx.translate(x, y); ctx.scale(s, s); tag(ctx, text, 0, 0, hot, big); ctx.restore(); };
+    at('Play', PL.cx * 2, (PL.cy - PL.ry - 4) * 2, near === PLAY, true);
+    for (const o of objs()) {
+      const [ax, ay] = anchor(o), hot = o === near;
+      if (!hot && Math.hypot(ax - px, ay - py) > 352) continue;
+      at(o.name, ax, ay, hot, false);
+    }
+    ctx.restore();
+  }
+
+  /** Lights for the Halloween night (World.drawNight): the campfire and you. */
   function lights() {
-    return on && view() === 'camp' ? [{ x: 0, y: -8, r: 230 + Math.sin(t * 9) * 8, col: 'rgba(255,150,60,.35)' }, { x: px, y: py - 12, r: 90 }] : null;
+    if (!on || view() !== 'camp') return null;
+    const f = OBJ[0];
+    return [{ x: f.x * 32 + OX, y: f.y * 32 + OY, r: 230 + Math.sin(t * 9) * 8, col: 'rgba(255,150,60,.35)' }, { x: px + OX, y: py + OY - 12, r: 90 }];
   }
 
-  const rect = (ctx, c, x, y, w, h) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), w, h); };
-  function shadow(ctx, x, y, rx) { ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y, rx, rx * 0.35, 0, 0, 6.2832); ctx.fill(); }
-
-  function drawGround(ctx) {
-    ctx.save();
-    const g = ctx.createRadialGradient(0, 0, 40, 0, 0, R + 60);
-    g.addColorStop(0, 'rgba(150,110,70,.55)'); g.addColorStop(0.75, 'rgba(120,90,60,.35)'); g.addColorStop(1, 'rgba(120,90,60,0)');
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.ellipse(0, 0, R + 60, (R + 60) * 0.82, 0, 0, 6.2832); ctx.fill();
-    ctx.restore();
-  }
-
-  function label(ctx, o) {
-    const isNear = o === near;
-    ctx.save();
-    ctx.font = (isNear ? '800 11px' : '700 9px') + ' Pixelify, monospace'; ctx.textAlign = 'center';
-    const y = o.y - (o.top || 64);
-    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.strokeText(o.name, o.x, y);
-    ctx.fillStyle = isNear ? '#ffd23f' : 'rgba(240,244,255,.9)'; ctx.fillText(o.name, o.x, y);
-    if (isNear) { ctx.fillText('▼', o.x, y + 10 + Math.sin(t * 6) * 2); }
-    ctx.restore();
-  }
-
-  function drawFire(ctx, o) {
-    o.top = 58;
-    const { x, y } = o;
-    // Stones and logs.
-    for (let i = 0; i < 9; i++) {
-      const a = i / 9 * 6.2832, sx = x + Math.cos(a) * 24, sy = y + Math.sin(a) * 10;
-      ctx.fillStyle = i % 2 ? '#6f6a72' : '#857f88'; ctx.beginPath(); ctx.ellipse(sx, sy, 7, 5, 0, 0, 6.2832); ctx.fill();
-    }
-    ctx.save(); ctx.translate(x, y - 2);
-    for (const r of [-0.4, 0.4]) { ctx.save(); ctx.rotate(r); rect(ctx, '#5a3a22', -18, -3, 36, 6); rect(ctx, '#7a5232', -18, -3, 36, 2); ctx.restore(); }
-    ctx.restore();
-    // Flames.
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    for (let i = 0; i < 6; i++) {
-      const k = 0.7 + 0.3 * Math.sin(t * 9 + i * 1.7), fx = x + (i - 2.5) * 5 + Math.sin(t * 5 + i) * 2, fh = (24 + (i % 3) * 8) * k;
-      const gr = ctx.createLinearGradient(fx, y - 4, fx, y - 4 - fh);
-      gr.addColorStop(0, 'rgba(255,90,20,.9)'); gr.addColorStop(0.5, 'rgba(255,180,40,.8)'); gr.addColorStop(1, 'rgba(255,240,150,0)');
-      ctx.fillStyle = gr;
-      ctx.beginPath(); ctx.moveTo(fx - 6, y - 4); ctx.quadraticCurveTo(fx - 5, y - 4 - fh * 0.6, fx, y - 4 - fh); ctx.quadraticCurveTo(fx + 5, y - 4 - fh * 0.6, fx + 6, y - 4); ctx.fill();
-    }
-    const gl = ctx.createRadialGradient(x, y - 14, 2, x, y - 14, 70);
-    gl.addColorStop(0, 'rgba(255,160,60,.35)'); gl.addColorStop(1, 'rgba(255,120,40,0)');
-    ctx.fillStyle = gl; ctx.fillRect(x - 70, y - 84, 140, 140);
-    // Sparks.
-    for (let i = 0; i < 5; i++) {
-      const ph = ((t * 0.7 + i * 0.23) % 1);
-      rect(ctx, 'rgba(255,200,90,' + (1 - ph) + ')', x + Math.sin(i * 7 + t) * 10, y - 20 - ph * 50, 2, 2);
-    }
-    ctx.restore();
-  }
-
-  function drawPC(ctx, o) {
-    o.top = 66;
-    const { x, y } = o;
-    shadow(ctx, x, y, 26);
-    rect(ctx, '#5b4a3a', x - 26, y - 22, 52, 22);          // desk
-    rect(ctx, '#3f3226', x - 26, y - 4, 52, 4);
-    rect(ctx, '#c8ccd6', x - 18, y - 50, 36, 28);          // monitor
-    rect(ctx, '#8a90a0', x - 18, y - 24, 36, 2);
-    const glow = 0.75 + Math.sin(t * 3) * 0.15;
-    rect(ctx, `rgba(80,${Math.round(170 * glow)},255,1)`, x - 14, y - 46, 28, 18);
-    rect(ctx, 'rgba(255,255,255,.35)', x - 12, y - 44, 10, 2);
-    rect(ctx, '#ff5f6d', x - 4, y - 40, 8, 3); rect(ctx, '#fff', x - 4, y - 37, 8, 3);   // a Poké Ball on screen
-    rect(ctx, '#8a90a0', x - 4, y - 22, 8, 2);
-  }
-
-  function drawPost(ctx, o) {
-    o.top = 64;
-    const { x, y } = o;
-    shadow(ctx, x, y, 18);
-    rect(ctx, '#6b4a2e', x - 4, y - 46, 8, 46);            // post
-    rect(ctx, '#8a6240', x - 4, y - 46, 3, 46);
-    rect(ctx, '#d9b25c', x - 14, y - 34, 28, 6);           // straw bands
-    rect(ctx, '#d9b25c', x - 14, y - 18, 28, 6);
-    ctx.fillStyle = '#7fe08a'; ctx.font = '800 14px Pixelify, monospace'; ctx.textAlign = 'center';
-    ctx.fillText('▲', x, y - 50 + Math.sin(t * 3) * 2);
-  }
-
-  function drawKecleon(ctx, o) {
-    o.top = 78;
-    const { x, y } = o;
-    shadow(ctx, x, y, 34);
-    rect(ctx, '#6b4a2e', x - 32, y - 20, 64, 20);         // counter
-    rect(ctx, '#8a6240', x - 32, y - 20, 64, 4);
-    rect(ctx, '#4a3220', x - 30, y - 56, 4, 36); rect(ctx, '#4a3220', x + 26, y - 56, 4, 36);
-    for (let i = 0; i < 8; i++) rect(ctx, i % 2 ? '#f2f2f2' : '#3fb24a', x - 36 + i * 9, y - 64, 9, 10);   // awning
-    const k = npcs[352];
-    if (k) k.draw(ctx, x, y - 14);
-  }
-
-  function drawMart(ctx, o) {
-    o.top = 78;
-    const { x, y } = o;
-    shadow(ctx, x, y, 34);
-    rect(ctx, '#d8dde6', x - 32, y - 22, 64, 22);
-    rect(ctx, '#b8bfcc', x - 32, y - 4, 64, 4);
-    rect(ctx, '#3a6fd8', x - 36, y - 64, 72, 12);          // blue roof
-    rect(ctx, '#2a52a8', x - 36, y - 54, 72, 3);
-    rect(ctx, '#4a3220', x - 32, y - 52, 4, 30); rect(ctx, '#4a3220', x + 28, y - 52, 4, 30);
-    ctx.fillStyle = '#fff'; ctx.font = '800 9px Pixelify, monospace'; ctx.textAlign = 'center'; ctx.fillText('MART', x, y - 56);
-    // Goods on the counter.
-    rect(ctx, '#ff5f6d', x - 20, y - 28, 8, 6); rect(ctx, '#fff', x - 20, y - 25, 8, 3);
-    rect(ctx, '#7f6bff', x - 4, y - 30, 7, 8); rect(ctx, '#ffd23f', x + 10, y - 29, 8, 7);
-  }
-
-  function drawGacha(ctx, o) {
-    o.top = 70;
-    const { x, y } = o;
-    shadow(ctx, x, y, 20);
-    rect(ctx, '#c0303e', x - 16, y - 24, 32, 24);           // base
-    rect(ctx, '#e04858', x - 16, y - 24, 32, 4);
-    rect(ctx, '#222', x - 4, y - 14, 8, 8);                 // slot
-    ctx.fillStyle = 'rgba(200,230,255,.55)';                // dome
-    ctx.beginPath(); ctx.arc(x, y - 36, 16, Math.PI, 0); ctx.lineTo(x + 16, y - 24); ctx.lineTo(x - 16, y - 24); ctx.fill();
-    const cols = ['#ff5f6d', '#ffd23f', '#5fd4ff', '#7fe08a', '#ff9ed8'];
-    for (let i = 0; i < 7; i++) {
-      const a = i * 0.9 + Math.sin(t * 2 + i) * 0.08, r = 6 + (i % 3) * 3;
-      ctx.fillStyle = cols[i % cols.length];
-      ctx.beginPath(); ctx.arc(x + Math.cos(a) * r, y - 30 - Math.abs(Math.sin(a)) * r * 0.7, 3, 0, 6.2832); ctx.fill();
-    }
-    rect(ctx, 'rgba(255,255,255,.6)', x - 9, y - 46, 4, 6);
-  }
-
-  function drawDojo(ctx, o) {
-    o.top = 80;
-    const { x, y } = o;
-    ctx.fillStyle = '#c9b48a'; ctx.beginPath(); ctx.ellipse(x, y, 34, 13, 0, 0, 6.2832); ctx.fill();   // mat
-    ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = 2; ctx.stroke();
-    const h = npcs[106];
-    if (h) h.draw(ctx, x, y);
-  }
-
-  function drawBoard(ctx, o) {
-    o.top = 72;
-    const { x, y } = o;
-    shadow(ctx, x, y, 26);
-    rect(ctx, '#4a3220', x - 22, y - 50, 4, 50); rect(ctx, '#4a3220', x + 18, y - 50, 4, 50);
-    rect(ctx, '#7a5232', x - 28, y - 54, 56, 32);
-    rect(ctx, '#5a3a22', x - 28, y - 24, 56, 2);
-    const papers = [['#fff8e0', -22, -50], ['#ffe0e0', -4, -48], ['#e0f0ff', 12, -50], ['#fff8e0', -14, -38], ['#e8ffe0', 6, -37]];
-    for (const [c, dx, dy] of papers) { rect(ctx, c, x + dx, y + dy, 12, 10); rect(ctx, '#c0303e', x + dx + 5, y + dy, 2, 2); }
-  }
-
-  function drawTent(ctx, o) {
-    o.top = 70;
-    const { x, y } = o;
-    shadow(ctx, x, y, 36);
-    ctx.fillStyle = '#3a8a5a';
-    ctx.beginPath(); ctx.moveTo(x - 36, y); ctx.lineTo(x, y - 52); ctx.lineTo(x + 36, y); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#2a6a44';
-    ctx.beginPath(); ctx.moveTo(x, y - 52); ctx.lineTo(x + 36, y); ctx.lineTo(x + 8, y); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#1a2a22';
-    ctx.beginPath(); ctx.moveTo(x - 10, y); ctx.lineTo(x, y - 30); ctx.lineTo(x + 6, y); ctx.closePath(); ctx.fill();
-    rect(ctx, '#6b4a2e', x - 1, y - 58, 2, 8);
-  }
-
-  function drawBooks(ctx, o) {
-    o.top = 62;
-    const { x, y } = o;
-    shadow(ctx, x, y, 18);
-    rect(ctx, '#6b4a2e', x - 3, y - 28, 6, 28);            // stand
-    rect(ctx, '#7a5232', x - 18, y - 36, 36, 8);
-    rect(ctx, '#f2ead8', x - 16, y - 44, 15, 10); rect(ctx, '#f2ead8', x + 1, y - 44, 15, 10);   // open book
-    rect(ctx, '#c0303e', x - 1, y - 44, 2, 10);
-    for (let i = 0; i < 3; i++) { rect(ctx, '#b0a890', x - 14, y - 42 + i * 3, 11, 1); rect(ctx, '#b0a890', x + 3, y - 42 + i * 3, 11, 1); }
-  }
-
-  function drawEmotes(ctx, o) {
-    o.top = 66;
-    const { x, y } = o;
-    shadow(ctx, x, y, 16);
-    rect(ctx, '#4a3220', x - 2, y - 30, 4, 30);
-    ctx.fillStyle = '#fff'; ctx.strokeStyle = '#1b1822'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(x, y - 40, 14, 0, 6.2832); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(x, y - 40, 10, 0, 6.2832); ctx.fill();
-    rect(ctx, '#1b1822', x - 5, y - 44, 2, 3); rect(ctx, '#1b1822', x + 3, y - 44, 2, 3);
-    ctx.strokeStyle = '#1b1822'; ctx.beginPath(); ctx.arc(x, y - 40, 5, 0.3, Math.PI - 0.3); ctx.stroke();
-  }
-
-  function drawPumpkins(ctx, o) {
-    o.top = 64;
-    const { x, y } = o;
-    shadow(ctx, x, y, 30);
-    rect(ctx, '#5a3a22', x - 28, y - 18, 56, 18);
-    rect(ctx, '#7a5232', x - 28, y - 18, 56, 3);
-    if (G.HHDecor && G.HHDecor.ok) {
-      G.HHDecor.piece(ctx, 'pumpkin0', x - 14, y - 16); G.HHDecor.piece(ctx, 'pumpkin1', x + 14, y - 16); G.HHDecor.piece(ctx, 'pumpkin2', x, y - 30);
-    }
-    ctx.fillStyle = '#ff9a3c'; ctx.font = '800 9px Pixelify, monospace'; ctx.textAlign = 'center'; ctx.fillText('CANDY', x, y - 46);
-  }
-
-  return { enter, update, drawables, lights, hides, interact, walking, setView, get active() { return on && view() === 'camp'; } };
+  return { enter, update, drawables, drawLabels, lights, hides, interact, walking, setView, get active() { return on && view() === 'camp'; } };
 })();
