@@ -22,3 +22,15 @@ window.PS_PAGES = !!document.querySelector('meta[name="ps-pages"]');
   p[0].textContent = copy[0]; p[1].textContent = copy[1];
 })();
 
+// Standalone build: iOS 26 home-screen app, portrait. Make the page as tall as the
+// screen right away, so iOS hands over the whole screen (no black strip at the
+// bottom). ui/pad-skin.js checks it worked and undoes it if it didn't.
+(function () {
+  try {
+    var st = navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+    if (!st || !window.screen) return;
+    var sw = Math.min(screen.width, screen.height), sh = Math.max(screen.width, screen.height);
+    if (innerWidth > innerHeight || Math.abs(sw - innerWidth) > 2) return;
+    if (sh - innerHeight > 1 && sh - innerHeight < 130) document.documentElement.style.minHeight = sh + 'px';
+  } catch (e) { /* nada */ }
+})();

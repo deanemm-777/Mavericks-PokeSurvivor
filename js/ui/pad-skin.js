@@ -111,22 +111,32 @@ G.PadSkin = (() => {
    * over the whole thing; if it doesn't (other iOS versions), undo it so nothing scrolls.
    */
   let stretch = null;     // null: not tried, 'on': page made tall, 'off': didn't help
+  let tries = 0, offTimer = 0;
   function fullViewport() {
     const standalone = navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches);
     if (!standalone || stretch === 'off' || !window.screen) return;
     const sw = Math.min(screen.width, screen.height), sh = Math.max(screen.width, screen.height);
     if (innerWidth > innerHeight || Math.abs(sw - innerWidth) > 2) return;     // portrait only
     if (stretch === null && sh - innerHeight > 1 && sh - innerHeight < 130) {
-      stretch = 'on';
+      stretch = 'on'; tries++;
       document.documentElement.style.minHeight = sh + 'px';
-      setTimeout(() => {
-        if (innerHeight < sh - 1) {
-          stretch = 'off';
-          document.documentElement.style.minHeight = '';
-        }
+      // iOS can take a moment to hand over the full screen (more so now the game
+      // starts faster): look again a few times before deciding it didn't help.
+      const check = (k) => {
+        if (innerHeight >= sh - 1) { scrollTo(0, 0); layout(); return; }
+        if (k < 3) { offTimer = setTimeout(() => check(k + 1), 900); return; }
+        stretch = 'off';
+        document.documentElement.style.minHeight = '';
         scrollTo(0, 0);
         layout();
-      }, 700);
+        // Try again later (coming back to the app, turning the phone), a few times.
+        if (tries < 4) {
+          const again = () => { removeEventListener('resize', again); document.removeEventListener('visibilitychange', again); if (stretch === 'off') { stretch = null; layout(); } };
+          addEventListener('resize', again); document.addEventListener('visibilitychange', again);
+        }
+      };
+      clearTimeout(offTimer);
+      offTimer = setTimeout(() => check(0), 700);
     }
   }
 
