@@ -1129,6 +1129,7 @@ G.Game = (() => {
       G.World.drawVignette(ctx, w, h);
       if (G.Camp.active) {            // the camp's labels, above the night
         ctx.save(); ctx.scale(G.Camera.scale, G.Camera.scale); G.Camera.apply(ctx); G.Camp.drawLabels(ctx); ctx.restore();
+        G.Camp.drawStick(ctx);
       }
     }
 

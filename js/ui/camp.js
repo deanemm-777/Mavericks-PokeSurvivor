@@ -20,7 +20,8 @@
  *
  * Coordinates: Doofcraft's camp units (2 per art px, 32 per tile); the camp is
  * drawn shifted by (OX, OY) so the campfire sits at the world's origin.
- * Moving: the d-pad / stick / arrow keys / WASD, or tap the ground to walk there.
+ * Moving: the d-pad / controller / arrow keys / WASD, or the floating touch
+ * joystick from a run (core/touch.js): put a finger down anywhere and drag.
  */
 G.Camp = (() => {
   const A = G.CampArt, HUB = A.HUB;
@@ -40,8 +41,7 @@ G.Camp = (() => {
   ];
   const PLAY = { id: 'platform', go: 'play', name: 'Play' };
   const PL = { cx: Math.round(HUB.platform.x * 16), cy: Math.round(HUB.platform.y * 16), rx: Math.round(HUB.platform.rx * 16), ry: Math.round(HUB.platform.ry * 16) };
-  let stick = [0, 0];         // on-screen joystick (full-screen theme)
-  let on = false, mate = null, px = HUB.spawn.x * 32, py = HUB.spawn.y * 32, tx = null, ty = null, pendingGo = null, near = null, t = 0;
+  let on = false, mate = null, px = HUB.spawn.x * 32, py = HUB.spawn.y * 32, near = null, t = 0;
   const npcs = {};
 
   const view = () => (G.Settings.get('menuView') || 'camp');
@@ -220,29 +220,20 @@ G.Camp = (() => {
     if (!on) return;
     t += dt;
     buildSolids();
+    G.Touch.clearButtons();          // no run HUD buttons to press in the camp
     const walk = walking();
     let vx = 0, vy = 0;
     if (walk) {
-      const a = stick[0] || stick[1] ? stick : G.Input.axis();
-      if (a[0] || a[1]) { vx = a[0]; vy = a[1]; tx = ty = null; pendingGo = null; }
-      else if (tx != null) {
-        const dx = tx - px, dy = ty - py, d = Math.hypot(dx, dy);
-        if (d < 6) { tx = ty = null; if (pendingGo) { const o = pendingGo; pendingGo = null; open(o); } }
-        else { vx = dx / d; vy = dy / d; }
-      }
+      // Keys, the controller and the touch joystick (core/touch.js) all come through here.
+      const a = G.Input.axis();
+      if (a[0] || a[1]) { vx = a[0]; vy = a[1]; }
       if (G.Input.tap('enter') || G.Input.tap('space')) interact();
       if (G.Input.tap('keyg')) G.Emotes.openWheel();
     }
     const m = Math.hypot(vx, vy);
     if (m > 0.15) {
       const k = Math.min(1, m) / m;
-      const bx = px, by = py;
       move(vx * k * SPEED * dt, vy * k * SPEED * dt);
-      // Walking to a tapped spot and stuck against something: stop there.
-      if (tx != null && px === bx && py === by) {
-        tx = ty = null;
-        if (pendingGo) { const o = pendingGo; pendingGo = null; if (rectDist(reach(o), px, py) < 60) open(o); }
-      }
     }
     if (mate) {
       const moving = m > 0.15;
@@ -262,49 +253,19 @@ G.Camp = (() => {
   }
 
   /*
-   * The on-screen joystick and A button (full-screen theme; the Game Boy skin
-   * has its own d-pad and A). Drag anywhere in the stick's circle.
+   * The A button (full-screen theme; the Game Boy skin has its own A). Moving
+   * uses the same floating joystick as a run (core/touch.js): put a finger
+   * down anywhere on the camp and drag.
    */
   function wireStick() {
-    const el = document.getElementById('camp-stick'), act = document.getElementById('camp-act');
-    if (!el || el.dataset.wired) return;
-    el.dataset.wired = '1';
-    const knob = el.querySelector('i');
-    let id = null;
-    const set = (cx, cy) => {
-      const r = el.getBoundingClientRect(), R0 = r.width / 2;
-      let dx = cx - (r.left + R0), dy = cy - (r.top + R0);
-      const d = Math.hypot(dx, dy), max = R0 * 0.6;
-      if (d > max) { dx *= max / d; dy *= max / d; }
-      knob.style.transform = `translate(${dx}px, ${dy}px)`;
-      const mm = Math.hypot(dx, dy) / max;
-      stick = mm < 0.18 ? [0, 0] : [dx / max, dy / max];
-    };
-    const end = e => { if (e.pointerId !== id) return; id = null; stick = [0, 0]; knob.style.transform = ''; el.classList.remove('on'); };
-    el.addEventListener('pointerdown', e => { e.preventDefault(); id = e.pointerId; el.setPointerCapture(id); el.classList.add('on'); tx = ty = null; pendingGo = null; set(e.clientX, e.clientY); });
-    el.addEventListener('pointermove', e => { if (e.pointerId === id) set(e.clientX, e.clientY); });
-    el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
-    if (act) act.addEventListener('pointerdown', e => { e.preventDefault(); if (near) { G.Audio.sfx('click'); interact(); } });
+    const act = document.getElementById('camp-act');
+    if (!act || act.dataset.wired) return;
+    act.dataset.wired = '1';
+    act.addEventListener('pointerdown', e => { e.preventDefault(); if (near) { G.Audio.sfx('click'); interact(); } });
   }
 
-  /** Tap on the world: walk there; tap on something: walk to it and open it. */
-  function onTap(e) {
-    if (!walking() || e.target.id !== 'game') return;
-    const cv = e.target, r = cv.getBoundingClientRect(), cam = G.Camera;
-    const wx = cam.left() + (e.clientX - r.left) / cam.scale - OX, wy = cam.top() + (e.clientY - r.top) / cam.scale - OY;
-    let hit = null;
-    for (const o of objs()) { const b = bounds(o); if (wx >= b.x && wx <= b.x + b.w && wy >= b.y && wy <= b.y + b.h) hit = o; }
-    if (!hit && onPlatform(wx, wy)) {
-      if (onPlatform(px, py)) { open(PLAY); return; }
-      tx = PL.cx * 2; ty = PL.cy * 2 + 8; pendingGo = PLAY; return;
-    }
-    if (hit) {
-      const rr = reach(hit);
-      if (rectDist(rr, px, py) < 40) { open(hit); return; }
-      tx = rr.x + rr.w / 2; ty = rr.y + rr.h + 22; pendingGo = hit;
-    } else { tx = wx; ty = wy; pendingGo = null; }
-  }
-  addEventListener('pointerdown', onTap);
+  /** The touch joystick, drawn over the camp (game.js Backdrop render, screen px). */
+  function drawStick(ctx) { if (on && view() === 'camp' && G.Touch.active) G.Touch.draw(ctx); }
 
   /** World props are hidden while the camp covers the screen (game.js drawScene). */
   function hides() { return on && view() === 'camp'; }
@@ -400,5 +361,5 @@ G.Camp = (() => {
     return [{ x: f.x * 32 + OX, y: f.y * 32 + OY, r: 230 + Math.sin(t * 9) * 8, col: 'rgba(255,150,60,.35)' }, { x: px + OX, y: py + OY - 12, r: 90 }];
   }
 
-  return { enter, update, drawables, drawLabels, lights, hides, interact, walking, setView, get active() { return on && view() === 'camp'; } };
+  return { enter, update, drawables, drawLabels, drawStick, lights, hides, interact, walking, setView, get active() { return on && view() === 'camp'; } };
 })();

@@ -110,7 +110,8 @@ G.Touch = (() => {
     if (touchy && !active) { active = true; document.body.classList.add('touch'); }
     const b = hit(e.clientX, e.clientY);
     if (b) { e.preventDefault(); press(b); return; }
-    if (!touchy || !G.Game || !RUN.has(G.Game.state)) return;
+    // The camp main menu (ui/camp.js) walks with the same joystick.
+    if (!touchy || !G.Game || !(RUN.has(G.Game.state) || (G.Camp && G.Camp.walking()))) return;
     if (grab(e, G.Game.state === 'playing')) e.preventDefault();
   }
 
