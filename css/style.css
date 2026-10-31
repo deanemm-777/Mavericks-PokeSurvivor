@@ -1328,7 +1328,7 @@ body.skin .dojo-btn { left: calc(var(--sx) + 8px); top: calc(var(--sy) + 56px); 
 body.skin .bonus-pill { left: calc(var(--sx) + 6px); top: calc(var(--sy) + 34px); font-size: 9px; }
 
 /* ============ Camp main menu (js/ui/camp.js, update 40) ============ */
-.camp-dock, .camp-prompt, .camp-back { display: none; }
+.camp-dock, .camp-prompt, .camp-back, .camp-stick, .camp-act { display: none; }
 body.camp #scr-menu { pointer-events: none; }
 body.camp #scr-menu .menu-right, body.camp #scr-menu .partner-card { display: none !important; }
 body.camp #scr-menu .logo .t1, body.camp #scr-menu .logo .t2 { display: none; }
@@ -1371,3 +1371,16 @@ body.skin.camp .camp-prompt:not(.hidden) { bottom: 66px; font-size: 12px; paddin
 .ew-b { position: absolute; width: 52px; height: 52px; padding: 3px; border-radius: 50%; background: #fff; border: 2px solid var(--gold); }
 .ew-b img { border-radius: 50%; }
 .ew-x { position: absolute; left: calc(50% - 18px); top: calc(50% - 18px); width: 36px; height: 36px; border-radius: 50%; }
+
+/* Camp joystick and A button (full-screen theme; the skin has its own d-pad and A) */
+body.camp:not(.skin) .camp-stick { display: block; pointer-events: auto; touch-action: none; position: absolute; left: calc(20px + env(safe-area-inset-left));
+  bottom: calc(92px + env(safe-area-inset-bottom)); width: 116px; height: 116px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.06) 40%, rgba(255,255,255,.14)); border: 2px solid rgba(255,255,255,.25); }
+.camp-stick i { position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%;
+  background: rgba(240,244,255,.55); border: 2px solid rgba(255,255,255,.7); transition: transform .05s; }
+.camp-stick.on i { background: rgba(255,210,63,.7); }
+body.camp:not(.skin) .camp-act { display: block; pointer-events: auto; touch-action: none; position: absolute; right: calc(26px + env(safe-area-inset-right));
+  bottom: calc(112px + env(safe-area-inset-bottom)); width: 72px; height: 72px; border-radius: 50%; font: 800 26px var(--font);
+  color: rgba(26,20,38,.6); background: rgba(255,210,63,.35); border: 3px solid rgba(255,255,255,.35); }
+body.camp:not(.skin) .camp-act.ready { color: #1a1426; background: var(--gold); border-color: #fff; box-shadow: 0 0 14px rgba(255,210,63,.6); }
+body.camp:not(.skin) .camp-prompt:not(.hidden) { bottom: calc(214px + env(safe-area-inset-bottom)); }

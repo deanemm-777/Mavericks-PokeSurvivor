@@ -33,7 +33,7 @@ Personal, non-commercial build: no accounts, no cloud, no co-op, no ranking.
   - Items: Scope Lens, Muscle Band, Wise Glasses (`combat.js` bandK); Amulet Coin doubles coins picked up. Z-move 18% of boss HP (cap 40%). Defence from size (`player.js` sizeToughness / defenceStat). Normal-run late game after 20 min (`enemies.js` scale).
   - Difficulty Easy/Medium/Hard (`modes.js` DIFFS, picker on the Play screen); Halloween Shop sells 2,000 coins for candy.
   - Menus: Training Dojo (`systems/dojo.js`, hidden mode 'dojo'), Move Dex (`ui/movedex-ui.js`), Mega tab in the Pokédex, gacha 1/5/10/Max batches, stats line above the move bar, bonus events (`systems/bonus.js`, weekend rotation, offline stand-in for Doofcraft's admin events), Iris Charm ×2 wild shiny odds for its region.
-  - Camp main menu (`ui/camp.js`, setting 'menuView' camp|list): walk your partner (Input.axis / pad / tap to walk), objects open menus, dock at the bottom; `gamepad.js` routes the pad to the camp while it's walkable.
+  - Camp main menu (`ui/camp.js`, setting 'menuView' camp|list): walk your partner (Input.axis / pad / tap to walk); on-screen joystick + A button in the full-screen theme (#camp-stick, #camp-act), objects open menus, dock at the bottom; `gamepad.js` routes the pad to the camp while it's walkable.
   - Not brought over (need Doofcraft's servers or systems this build doesn't have): co-op camp, friends/room codes, usernames, leaderboards, emotes, Eternatus, Arceus plate swapping, Mew's move list change.
 - Update 40, second pass (2026-10-31):
   - Arceus plates (`systems/plates.js`): plate cards on level-up for Arceus; PLATE hotbar button / T swaps collected plates (60 s); forms 26001-26017 from `tools/fetch_more_forms.py` → `js/data/more-forms.js` (G.PLATES).

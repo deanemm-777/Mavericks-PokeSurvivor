@@ -31,6 +31,7 @@ G.Camp = (() => {
     { go: 'emotes', name: 'Emotes', x: -88, y: -178, r: 22, draw: drawEmotes },
     { go: 'halloween', name: 'Halloween Shop', x: 0, y: 245, r: 30, draw: drawPumpkins, hw: true }
   ];
+  let stick = [0, 0];         // on-screen joystick (full-screen theme)
   let on = false, mate = null, px = 0, py = 90, tx = null, ty = null, pendingGo = null, near = null, t = 0;
   const npcs = {};
 
@@ -69,6 +70,7 @@ G.Camp = (() => {
     if (d && !d.dataset.built) buildDock(d);
     const p = document.getElementById('camp-prompt');
     if (p) p.onclick = interact;
+    wireStick();
     if (d) d.querySelectorAll('[data-dgo=halloween]').forEach(b => b.classList.toggle('hidden', !(G.MartUI && G.MartUI.hwVisible())));
   }
 
@@ -104,7 +106,7 @@ G.Camp = (() => {
     const walk = walking();
     let vx = 0, vy = 0;
     if (walk) {
-      const a = G.Input.axis();
+      const a = stick[0] || stick[1] ? stick : G.Input.axis();
       if (a[0] || a[1]) { vx = a[0]; vy = a[1]; tx = ty = null; pendingGo = null; }
       else if (tx != null) {
         const dx = tx - px, dy = ty - py, d = Math.hypot(dx, dy);
@@ -141,7 +143,35 @@ G.Camp = (() => {
         p.classList.toggle('hidden', !near);
         if (near) p.innerHTML = `<b>A</b> ${near.name}`;
       }
+      const act = document.getElementById('camp-act');
+      if (act) act.classList.toggle('ready', !!near);
     }
+  }
+
+  /*
+   * The on-screen joystick and A button (full-screen theme; the Game Boy skin
+   * has its own d-pad and A). Drag anywhere in the stick's circle.
+   */
+  function wireStick() {
+    const el = document.getElementById('camp-stick'), act = document.getElementById('camp-act');
+    if (!el || el.dataset.wired) return;
+    el.dataset.wired = '1';
+    const knob = el.querySelector('i');
+    let id = null;
+    const set = (cx, cy) => {
+      const r = el.getBoundingClientRect(), R0 = r.width / 2;
+      let dx = cx - (r.left + R0), dy = cy - (r.top + R0);
+      const d = Math.hypot(dx, dy), max = R0 * 0.6;
+      if (d > max) { dx *= max / d; dy *= max / d; }
+      knob.style.transform = `translate(${dx}px, ${dy}px)`;
+      const m = Math.hypot(dx, dy) / max;
+      stick = m < 0.18 ? [0, 0] : [dx / max, dy / max];
+    };
+    const end = e => { if (e.pointerId !== id) return; id = null; stick = [0, 0]; knob.style.transform = ''; el.classList.remove('on'); };
+    el.addEventListener('pointerdown', e => { e.preventDefault(); id = e.pointerId; el.setPointerCapture(id); el.classList.add('on'); tx = ty = null; pendingGo = null; set(e.clientX, e.clientY); });
+    el.addEventListener('pointermove', e => { if (e.pointerId === id) set(e.clientX, e.clientY); });
+    el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+    if (act) act.addEventListener('pointerdown', e => { e.preventDefault(); if (near) { G.Audio.sfx('click'); interact(); } });
   }
 
   /** Tap on the world: walk there; tap on something: walk to it and open it. */
