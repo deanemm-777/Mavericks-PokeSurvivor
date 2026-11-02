@@ -144,6 +144,9 @@
         this.showHurt(d, color, dirX, dirY, eff);
         return;
       }
+      // Standalone (Doofcraft v42, Giratina): can't be hurt right now / takes more while staggered.
+      if (this.untouchable) { this.flash = 0.03; return; }
+      if (this.takenMul) amount *= this.takenMul;
       if (this.boss) this.rd += d;
       // Escudo: absorbe primero.
       if (this.shield > 0) {
@@ -1052,7 +1055,7 @@
           e.lagT = G.U.dist2(e.x, e.y, near.x, near.y) > bossFar * bossFar ? e.lagT + dt : 0;
           if (e.lagT > 4) { e.lagT = 0; G.Spawner.ahead(e, near); }
         }
-        if (e.boss || e.shiny || e.arceus || G.Rift.inArena) continue;
+        if (e.boss || e.shiny || e.arceus || e.behavior === 'thief' || G.Rift.inArena) continue;     // thieves: tracked by their arrow, never moved (v41)
         // Rezagados: los que se quedan atrás mientras corres y llevan un rato
         // FUERA DE LA VISTA (de todos) vuelven a salir por delante de ti. Así
         // no se puede huir sin más, y nunca desaparece uno que estés viendo.

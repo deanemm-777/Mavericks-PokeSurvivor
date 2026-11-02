@@ -730,7 +730,7 @@ G.Combat = (() => {
 
   // Golpe crítico (Mejoras → Golpe Crítico): x1,5 de daño, número naranja y grande.
   const CRIT_MUL = 1.5;
-  const isCrit = pl => !ghost && pl.critChance > 0 && Math.random() < pl.critChance;
+  const isCrit = pl => !ghost && pl.critChance > 0 && Math.random() < Math.min(1, pl.critChance);
 
   // Habilidad de quien pega (data/ability-fx.js): × al daño, crítico, estados y
   // lo que hace al golpear. (Los compañeros no la llevan aquí: pegan en su ordenador.)
@@ -898,7 +898,8 @@ G.Combat = (() => {
       e.touchCd = 0.55;
       e.strike(pl);
       pl.hurt(e.dmg, e.atkType, false, e.cat);
-      if (pl.hasItem('rockyhelmet')) e.hurt(15 + pl.level * 4, '#9aa6b5', e.x - pl.x, e.y - pl.y, 80);
+      // Rocky Helmet (Doofcraft v41): 10 % of the attacker's max HP (much less against bosses).
+      if (pl.hasItem('rockyhelmet')) e.hurt(15 + pl.level * 4 + e.maxHp * 0.1 * (e.boss || e.waveBoss || e.legendBoss ? 0.15 : 1), '#9aa6b5', e.x - pl.x, e.y - pl.y, 80);
       if (pl.abil && pl.abil.contact && !pl.dead && !e.dead) pl.abil.contact(pl, e);     // Elec. Estática, Cuerpo Llama...
       const [nx, ny] = G.U.norm(e.x - pl.x, e.y - pl.y);
       e.kx += nx * 150; e.ky += ny * 150;

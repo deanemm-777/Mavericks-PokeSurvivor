@@ -74,7 +74,7 @@ G.HUD = (() => {
     ctx.textAlign = 'center';
     ctx.font = F(800, 11);
     const ph = W.phase;
-    const line = ph === 'grace' ? 'ROUND ' + W.round + ' COMING…' : ph === 'boss' ? 'ROUND ' + W.round + '  ·  MEGA DARKRAI'
+    const line = ph === 'grace' ? 'ROUND ' + W.round + ' COMING…' : ph === 'boss' ? 'ROUND ' + W.round + '  ·  ' + W.bossLine
                : 'ROUND ' + W.round + (W.swarm ? '  ·  GHOST SWARM' : '') + '  ·  ' + W.left + ' LEFT';
     // Under the boss health bar when a boss is out.
     const y0 = (G.EnemyMgr.all().some(e => e.boss && !e.dead) ? 100 : 74) + oy;
@@ -143,7 +143,7 @@ G.HUD = (() => {
     {
       const sy = h - 54 - 18 - (touch ? Math.min(28, sa.bottom) : 0) - 14;
       const txt = 'ATK ×' + (pl.atk / Math.max(0.01, pl.baseAtk)).toFixed(2) + '  CD ' + Math.round((1 - pl.cdMul) * 100) + '%  SPD ' + Math.round(pl.spd) +
-                  '  DEF ' + pl.defenceStat + '  CRIT ' + Math.round((pl.critChance || 0) * 100) + '%';
+                  '  DEF ' + pl.defenceStat + '  CRIT ' + Math.round(Math.min(1, pl.critChance || 0) * 100) + '%';
       ctx.save();
       ctx.font = F(700, 9); ctx.textAlign = 'left';
       const tw = ctx.measureText(txt).width, sx = 8 + sa.left;

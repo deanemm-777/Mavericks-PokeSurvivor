@@ -6,7 +6,7 @@
 G.SettingsUI = (() => {
   const $ = G.UI.$;
   const esc = G.U.esc;
-  const VERSION = '1.2 · 2026-10-09';
+  const VERSION = 'v42 (Doofcraft) · 2026-11-02';
   const REPO = 'https://github.com/JPTER78/pokesurvivor';
   let tab = 'sound';
 

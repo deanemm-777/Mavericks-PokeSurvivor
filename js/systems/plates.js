@@ -10,16 +10,22 @@ G.Plates = (() => {
   let cd = 0;
 
   const isArceus = pl => !!pl && (pl.dex === 493 || (G.FORM_BY[pl.dex] && G.FORM_BY[pl.dex].base === 493));
-  const byType = t => (G.PLATES || []).find(p => p.type === t);
+  // Doofcraft v41: Arceus starts every run holding the Blank Plate (Normal), so
+  // the PLATE button is there from the start and you can always go back to it.
+  const BLANK = { type: 'normal', name: 'Blank Plate', spr: 493 };
+  const byType = t => (t === 'normal' ? BLANK : (G.PLATES || []).find(p => p.type === t));
 
-  function reset() { cd = 0; }
+  function reset(pl) {
+    cd = 0;
+    if (pl && isArceus(pl) && !pl.plate) { pl.plates = new Set(['normal']); pl.plate = 'normal'; }
+  }
   function update(dt) { if (cd > 0) cd -= dt; }
 
   /** Level-up cards (levelup.js): one plate you haven't found yet, now and then. */
   function cards(pl) {
     if (!isArceus(pl) || !G.PLATES) return [];
     const have = pl.plates || new Set();
-    const left = G.PLATES.filter(p => !have.has(p.type));
+    const left = G.PLATES.filter(p => p.type !== 'normal' && !have.has(p.type));
     if (!left.length) return [];
     const p = G.U.pick(left);
     return [{

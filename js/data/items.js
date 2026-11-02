@@ -19,7 +19,7 @@ G.Items = (() => {
       on: p => { p.cdMul *= 0.8; }, off: p => { p.cdMul /= 0.8; } },
     { id: 'focussash', name: 'Banda Focus', desc: 'Un golpe que te dejaría KO te deja con 1 de vida (cada 60 s).',
       on: () => {}, off: () => {} },
-    { id: 'shellbell', name: 'Cascabel Concha', desc: 'Recuperas vida con el daño que haces.',
+    { id: 'shellbell', name: 'Cascabel Concha', desc: 'You heal from every hit you land, like Draining Kiss (up to 3% of your HP per second).',
       on: () => {}, off: () => {} },
     // Standalone (Doofcraft update 40): doubles the coins you pick up while you hold it.
     { id: 'amuletcoin', name: 'Amulet Coin', desc: 'Doubles the coins you pick up while you hold it.',
@@ -30,7 +30,7 @@ G.Items = (() => {
       on: p => { p.atkMul *= 1.3; }, off: p => { p.atkMul /= 1.3; } },
     { id: 'choicescarf', name: 'Pañuelo Elección', desc: '+35% de velocidad.',
       on: p => { p.spdMul *= 1.35; }, off: p => { p.spdMul /= 1.35; } },
-    { id: 'rockyhelmet', name: 'Casco Dentado', desc: 'Los que te golpean cuerpo a cuerpo reciben daño.',
+    { id: 'rockyhelmet', name: 'Casco Dentado', desc: 'Foes that hit you up close take 10% of their max HP.',
       on: () => {}, off: () => {} },
     { id: 'assaultvest', name: 'Chaleco Asalto', desc: '+20% de reducción de daño recibido.',
       // (aparte del tope del 70 % de las cartas Coraza: ver Player.reduction)

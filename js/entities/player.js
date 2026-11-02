@@ -120,7 +120,9 @@ G.Player = class Player {
     const s = this.baseSpd * this.spdMul * (1 + this.buffs.spd.n * this.buffs.spd.amount) * (stuck ? 0.5 : 1) * (ab.speed ? ab.speed(this) : 1);
     const w = G.Weather.speedFor(this.mon.types);
     const slow = this.inLiquid && !ab.steady ? G.World.liquidEffect(this.mon.types).slow || 1 : 1;
-    return G.Judgment && G.Judgment.active ? G.Judgment.capSpd(s * slow * w) : s * slow * w;
+    // Choice Scarf adds its speed even at the speed cap (Doofcraft v41).
+    const scarf = this.item === 'choicescarf' ? 1.35 : 1;
+    return G.Judgment && G.Judgment.active ? G.Judgment.capSpd(s * slow * w / scarf) * scarf : s * slow * w;
   }
   /**
    * Standalone (update 40): Defence from size. Large Pokémon shrug off more:
@@ -361,9 +363,9 @@ G.Player = class Player {
     if (id) G.Items.BY[id].on(this);
   }
 
-  /** Cascabel Concha: un poco de vida por el daño que haces (tope 4/s). */
+  /** Shell Bell (Doofcraft v41): heals from every hit like Draining Kiss, up to 3 % of max HP per second. */
   onDealt(dmg) {
-    if (this.item === 'shellbell') this.bellHeal = Math.min(4, this.bellHeal + dmg * 0.04);
+    if (this.item === 'shellbell') this.bellHeal = Math.min(this.maxHp * 0.03, this.bellHeal + dmg * 0.75);
   }
 
   /** Poder de un altar (ver systems/interact.js): se aplica y se quita solo. */
@@ -398,7 +400,7 @@ G.Player = class Player {
       if (b.n > 0) { b.t -= dt; if (b.t <= 0) b.n = 0; }
     }
     if (this.slowT > 0) this.slowT -= dt;
-    if (this.bellHeal > 0) { const h = Math.min(this.bellHeal, 4 * dt); this.hp = Math.min(this.maxHp, this.hp + h); this.bellHeal -= h; }
+    if (this.bellHeal > 0) { const h = Math.min(this.bellHeal, this.maxHp * 0.03 * dt); this.hp = Math.min(this.maxHp, this.hp + h); this.bellHeal -= h; }
     if (this.power && (this.power.t -= dt) <= 0) { this.power.def.off(this); this.power = null; }
     if (this.regen > 0) this.hp = Math.min(this.maxHp, this.hp + this.regen * dt);
     if (this.abil && this.abil.tick) this.abil.tick(this, dt);

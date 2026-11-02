@@ -7,9 +7,10 @@
  *                Poison); defeat them all to clear it: a bonus level-up pick.
  *   Every 4th    GHOST SWARM: twice as many Ghost Pokémon, fast but frail.
  *   Every 5th    a legendary rift opens when it is cleared.
- *   Every 25th   BOSS: Mega Darkrai, stronger each time. Its Dark Void leaves
- *                circles on the ground (get out!) and it calls up ghosts.
- *                Defeating it gives 25 candy.
+ *   Every 25th   BOSS: Giratina (Doofcraft update 42, systems/giratina.js; it
+ *                replaced Mega Darkrai), stronger each time. Defeating it
+ *                gives 60 candy. (Mega Darkrai's code is still below: set
+ *                ROUND_BOSS = 'darkrai' to bring it back.)
  *   Objectives   1 per round (2 from round 4; none on boss rounds), with a timer:
  *                  Free the caged Pokémon   stand by each cage (it ambushes you)
  *                  Light the lanterns       stand by each of 4 lanterns
@@ -73,7 +74,8 @@ G.Waves = (() => {
     toSpawn = spawned = 0; acc = 0; boss = null; objs = []; regBoss = null;
     thiefT = G.U.rand(THIEF_FIRST[0], THIEF_FIRST[1]); thieves = 0;
   }
-  function stop() { on = false; for (const o of objs) if (o.kind === 'lanterns') for (const l of o.items) l.out = false; objs = []; boss = null; }
+  const ROUND_BOSS = 'giratina';
+  function stop() { G.Giratina.stop(); on = false; for (const o of objs) if (o.kind === 'lanterns') for (const l of o.items) l.out = false; objs = []; boss = null; }
 
   const isBossRound = r => r % BOSS_EVERY === 0;
   const isSwarm = r => r % SWARM_EVERY === 0 && !isBossRound(r);
@@ -92,8 +94,8 @@ G.Waves = (() => {
     const pl = G.Game.player;
     if (isBossRound(round)) {
       phase = 'boss'; toSpawn = 0;
-      spawnDarkrai();
-      G.Spawner.say('Round ' + round + ': Mega Darkrai!', 3.6);
+      if (ROUND_BOSS === 'giratina') { bossNo++; boss = G.Giratina.spawn(round, bossNo, tRound(round)); }
+      else { spawnDarkrai(); G.Spawner.say('Round ' + round + ': Mega Darkrai!', 3.6); }
     } else {
       phase = 'spawn';
       toSpawn = Math.round(curve(COUNT, round) * (swarm ? 2.2 : 1));
@@ -155,10 +157,12 @@ G.Waves = (() => {
     } else if (phase === 'fight') {
       if (!alive().length) clearRound();
     } else if (phase === 'boss') {
-      bossTick(dt, pl);
+      if (ROUND_BOSS === 'giratina') G.Giratina.tick(dt, pl); else bossTick(dt, pl);
       if (!boss || boss.dead) {
-        if (boss) G.Pickups.drop('candy', boss.x, boss.y - 10, BOSS_CANDY);
-        G.Spawner.say('Mega Darkrai defeated! +' + BOSS_CANDY + ' candy', 3.6);
+        const gir = ROUND_BOSS === 'giratina', n = gir ? G.Giratina.CANDY : BOSS_CANDY;
+        if (boss) G.Pickups.drop('candy', boss.x, boss.y - 10, n);
+        G.Spawner.say(gir ? 'Giratina is defeated! Reality is whole again! +' + n + ' candy' : 'Mega Darkrai defeated! +' + n + ' candy', 3.6);
+        if (gir) G.Giratina.stop();
         boss = null;
         // Its ghosts go with it.
         for (const e of alive()) if (!e.dead) e.hurt(e.hp + 1, '#9b6bff');
@@ -700,7 +704,7 @@ G.Waves = (() => {
   /** Things with feet, for the Y-sorted scene (game.js drawScene). */
   function drawables() {
     if (!on) return [];
-    const t = performance.now() / 1000, out = [];
+    const t = performance.now() / 1000, out = G.Giratina.drawables();
     for (const o of objs) {
       if (o.status === 'failed') continue;
       if (o.kind === 'cage') for (const c of o.items) out.push({ y: c.y, draw: ctx => drawCage(ctx, c, t) });
@@ -716,7 +720,7 @@ G.Waves = (() => {
 
   /** Light sources for the night (world coords): { x, y, r, col }. */
   function lights() {
-    const out = [];
+    const out = G.Giratina.lights();
     for (const o of objs) {
       if (o.status === 'failed') continue;
       if (o.kind === 'lanterns') for (const l of o.items) if (!l.decor) out.push({ x: l.x, y: l.y - 37, r: l.done ? 150 : 50, col: l.done ? 'rgba(255,160,60,.3)' : null });
@@ -729,7 +733,7 @@ G.Waves = (() => {
 
   /** Points the HUD arrows to (objectives off screen). */
   function targets() {
-    const out = [];
+    const out = G.Giratina.targets().slice();
     for (const o of objs) {
       if (o.status) continue;
       if (o.kind === 'escort') out.push(o.lost.following ? o.chapel : o.lost);
@@ -745,6 +749,8 @@ G.Waves = (() => {
     get phase() { return phase; },
     get swarm() { return swarm; },
     get bossRound() { return isBossRound(round); },
+    /** HUD line while the round boss is out. */
+    get bossLine() { return ROUND_BOSS === 'giratina' ? G.Giratina.hudLine() : 'MEGA DARKRAI'; },
     get left() { return phase === 'spawn' || phase === 'fight' ? Math.max(0, toSpawn - spawned) + alive().length : phase === 'boss' ? 1 : 0; },
     get objectives() { return objs; },
     /** Difficulty time of the current round (modes.js → G.Game.st.ft). */

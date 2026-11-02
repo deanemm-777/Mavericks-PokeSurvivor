@@ -431,7 +431,7 @@ G.MenuUI = (() => {
     const boost = m.fusion ? 'Fuses for the rest of the run: ' : 'For 30 s: ';
     return `<div class="mega-box" translate="no"><b class="gold">${m.fusion ? 'Fusion' : 'Mega Evolution'}</b>
       <div class="mega-forms">${forms.map(f => `<div class="mega-form"><canvas data-mega="${f.spr && G.SPRITE_META[f.spr] ? f.spr : dex}" width="110" height="100"></canvas><small>${f.n}</small></div>`).join('')}</div>
-      <p class="sub" style="margin:2px 0 0">${boost}+40 % damage, +15 % speed, -15 % cooldowns${m.fusion ? '' : ', and 30 % health back'}.
+      <p class="sub" style="margin:2px 0 0">${boost}${forms.map(f => { const b = G.Mega.boostOf(f, G.DEX_BY[dex] || (G.FORM_BY && G.FORM_BY[dex])); return (forms.length > 1 ? f.n + ': ' : '') + '+' + Math.round((b.atk - 1) * 100) + ' % attack' + (b.spd > 1.005 ? ', +' + Math.round((b.spd - 1) * 100) + ' % speed' : ''); }).join(' · ')}${m.fusion ? '' : ', and 30 % health back'}.
       ${forms.length > 1 ? 'Each time it alternates between the two forms.' : ''} Fill the Mega meter by defeating Pokémon, then press MEGA (L + R).</p></div>`;
   }
 

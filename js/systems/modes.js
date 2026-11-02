@@ -19,7 +19,7 @@ G.Modes = (() => {
     { id: 'fast',    name: 'Fast',     desc: 'Everything scales twice as fast. Arceus comes at 15:00. ×1.5 coins.' },
     { id: 'endless', name: 'Endless',  desc: 'No Judgment. Clear rounds for bonus picks, a legendary rift every 5 rounds and a boss every 25.' },
     { id: 'dojo',    name: 'Training Dojo', desc: 'Try your moves, items and Mega Evolution on training dummies.', hidden: true },
-    { id: 'waves',   name: 'Halloween Waves', desc: 'The Haunted Hollow at night. Defeat each round\'s Pokémon, ghost swarms every 4, Mega Darkrai every 25, and spooky objectives for candy.' }
+    { id: 'waves',   name: 'Halloween Waves', desc: 'The Haunted Hollow at night. Defeat each round\'s Pokémon, ghost swarms every 4, Giratina every 25, and spooky objectives for candy.' }
   ];
   const BY = {};
   for (const m of LIST) BY[m.id] = m;

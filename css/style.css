@@ -1380,3 +1380,10 @@ body.camp:not(.skin) .camp-act { display: block; pointer-events: auto; touch-act
   color: rgba(26,20,38,.6); background: rgba(255,210,63,.35); border: 3px solid rgba(255,255,255,.35); }
 body.camp:not(.skin) .camp-act.ready { color: #1a1426; background: var(--gold); border-color: #fff; box-shadow: 0 0 14px rgba(255,210,63,.6); }
 body.camp:not(.skin) .camp-prompt:not(.hidden) { bottom: calc(214px + env(safe-area-inset-bottom)); }
+
+/* Emote filters (Doofcraft v41) */
+.em-filters { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
+.em-filters .chip { font-size: 11px; padding: 3px 8px; }
+
+/* Doofcraft v41 font fix: letters like "fi" and "fl" never merge into one. */
+body { font-variant-ligatures: none; font-feature-settings: "liga" 0, "clig" 0; }

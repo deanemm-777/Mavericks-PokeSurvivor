@@ -197,7 +197,7 @@ G.Game = (() => {
 
     pl = new G.Player(mon, perks, snap ? !!snap.shiny : !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
     G.Bonus.runStart();
-    G.Plates.reset();
+    G.Plates.reset(pl);
     G.Eternatus.reset(snap && snap.eterna);
     pl.xpMul *= G.Modes.diff.xp * G.Bonus.xp;   // difficulty and bonus events (update 40)
     if (G.Modes.dojo) G.Dojo.start(pl);

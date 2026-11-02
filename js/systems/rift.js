@@ -67,10 +67,14 @@ G.Rift = (() => {
   function open() {
     const alive = G.Game.everyone().filter(p => !p.dead);
     const near = G.U.pick(alive.length ? alive : [G.Game.player]);
-    for (let i = 0; i < 24; i++) {
+    // Doofcraft v42: never in a tight gap a big Pokémon can't squeeze into (room
+    // for the biggest Pokémon in the run all round it; a little less if nothing fits).
+    const big = Math.max(...alive.map(p => p.r || 14), 14);
+    for (let i = 0; i < 48; i++) {
       const a = Math.random() * 6.2832, d = G.U.rand(380, 560);
       const x = near.x + Math.cos(a) * d, y = near.y + Math.sin(a) * d * 0.85;
-      if (!G.World.isFree(x, y, 22)) continue;
+      const room = i < 36 ? Math.max(40, big * 2 + 12) : Math.max(24, big + 8);
+      if (!G.World.isFree(x, y, room)) continue;
       show(x, y, TTL);
       if (G.Coop.isHost) G.Coop.broadcast(['rift', Math.round(x), Math.round(y), TTL]);
       return;

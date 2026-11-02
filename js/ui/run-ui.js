@@ -380,7 +380,7 @@ G.RunUI = (() => {
       ['Defensa', n(mon.df) + ' <small>' + guard(fis) + ' físico</small>'],
       ['Def. Esp.', n(mon.sd) + ' <small>' + guard(esp) + ' especial</small>'],
       ['Velocidad', n(pl.spd)],
-      ['Crítico', pct(pl.critChance || 0)],
+      ['Crítico', pct(Math.min(1, pl.critChance || 0))],
       ['Defence', String(pl.defenceStat)],
       ['Reducción de daño', pct(pl.reduction)],
       ['Recarga', pl.cdMul < 0.995 ? '−' + pct(1 - pl.cdMul) : '0 %'],
@@ -419,13 +419,19 @@ G.RunUI = (() => {
     $('pause-sum').innerHTML = pauseSummary();
     G.UI.soundControls($('pause-sound'));
     $('pause-coop').classList.toggle('hidden', !coop);
-    $('btn-quit').textContent = coop ? 'Salir de la partida' : 'Abandonar run';
+    // Doofcraft v42: "End run" ends the run where it is and claims its rewards
+    // (coins, tickets, candy), asking first.
+    $('btn-quit').textContent = coop ? 'Salir de la partida' : 'End run';
+    $('btn-quit').setAttribute('translate', 'no');
     G.UI.show('scr-pause');
   }
 
   function wirePause(onResume, onQuit) {
     $('btn-resume').onclick = onResume;
-    $('btn-quit').onclick = onQuit;
+    $('btn-quit').onclick = () => {
+      if (G.Game.player && !G.Game.player.uid && !confirm('End the run here and claim its rewards?')) return;
+      onQuit();
+    };
     const sq = $('btn-save-quit');
     if (sq) sq.onclick = () => G.Game.saveAndQuit();
   }
