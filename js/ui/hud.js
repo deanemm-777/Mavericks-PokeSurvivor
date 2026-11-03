@@ -512,8 +512,10 @@ G.HUD = (() => {
       if (on) {
         ctx.font = F(700, 10);
         ctx.textAlign = 'center';
-        ctx.fillStyle = fused ? BOND : col;
-        ctx.fillText(fused ? G.T(m.name, 'move') + ' +' + (g.length - 1) : G.T(m.name, 'move'), x + S / 2, y - 7);
+        ctx.fillStyle = fused ? BOND : pl.shiny ? '#bff4ff' : col;
+        // Shiny partner: its moves are shiny versions (combat.js), marked with a star.
+        const nm = (pl.shiny ? '★ ' : '') + G.T(m.name, 'move');
+        G.I18n.rawCanvas(ctx, 'fillText', fused ? nm + ' +' + (g.length - 1) : nm, x + S / 2, y - 7);
       }
     }
 

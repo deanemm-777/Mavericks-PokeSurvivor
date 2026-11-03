@@ -37,12 +37,12 @@ G.Checkpoint = (() => {
       if (plain(v)) p[k] = JSON.parse(JSON.stringify(v === undefined ? null : v));
     }
     // A Mega Evolution in progress is not kept: save the stats it had before.
-    if (pl.mega) { p.atkMul = pl.atkMul / 1.4; p.spdMul = pl.spdMul / 1.15; p.cdMul = pl.cdMul / 0.85; }
+    if (pl.mega) { const b = pl.megaBoost || { atk: 1.2, spd: 1 }; p.atkMul = pl.atkMul / b.atk; p.spdMul = pl.spdMul / b.spd; delete p.megaBoost; }
     const ids = new Map(pl.moves.map((m, i) => [m, i]));
     return {
       v: 1, at: Date.now(),
       mode: G.Modes.id, ms: G.Modes.state(), mega: G.Mega.state(),
-      time: g.time, seed: g.seed, dex: pl.dex, shiny: !!pl.shiny, skin: pl.anim.skin || '',
+      time: g.time, seed: g.seed, dex: pl.dex, partner: pl.evoTarget || pl.dex, shiny: !!pl.shiny, skin: pl.anim.skin || '',
       p,
       moves: pl.moves.map(m => ({ id: m.id, lvl: m.lvl, ev: m.evolved ? 1 : 0, dealt: Math.round(m.dealt || 0), since: m.since || 0 })),
       slots: pl.slots.map(gr => gr.map(m => ids.get(m))),

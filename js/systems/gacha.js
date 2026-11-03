@@ -138,8 +138,11 @@ G.Gacha = (() => {
       else if (n === 10 && i === n - 1 && !out.some(r => r.rarity >= 4)) want = rollRarity(4);
       else want = rollRarity();
 
-      const { rarity, list } = poolNear(want, gen);
+      const { rarity, list: raw } = poolNear(want, gen);
       if (rarity === 5) save.pity[gen] = 0;
+      // Standalone (evolution, systems/evo.js): an evolved form comes out as the
+      // first form of its line (evolve it in a run to add the rest).
+      const list = [...new Set(raw.map(p => G.DEX_BY[G.Evo.base(p.dex)] || p))];
       let mon = G.U.pick(list);
       let shiny = G.Sprites.hasShiny(mon.dex) && (forceShiny > 0 ? (forceShiny--, true) : Math.random() < rate);
       // Los shiny no se repiten: si ya tienes ese, sale otro de la misma rareza

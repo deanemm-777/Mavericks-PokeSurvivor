@@ -167,10 +167,14 @@ G.Game = (() => {
     // Standalone: Halloween Waves is always on the Halloween maps, with candy.
     G.Halloween.runStart(coop ? coop.hw : (snap ? snap.mode : opt.mode) === 'waves' ? true : undefined);
     const save = G.DB.save;
-    if (snap && G.DEX_BY[snap.dex]) save.partner = snap.dex;
-    // Con su naturaleza aplicada (una copia: ver systems/mons.js).
-    const mon = G.Mons.monFor(save.partner);
-    const perks = G.Upgrades.perks(G.DB.upgradesOf(mon.dex), G.Upgrades.starsOf(mon.dex));
+    if (snap && G.DEX_BY[snap.partner || snap.dex]) save.partner = snap.partner || snap.dex;
+    // Standalone (evolution, systems/evo.js): the run starts as the first form of
+    // your partner's line and evolves towards your partner. The partner's nature,
+    // upgrades, ability and stars apply to every form.
+    const partner = save.partner;
+    const startDex = snap && G.DEX_BY[snap.dex] ? snap.dex : G.Evo.startOf(partner);
+    const mon = G.Evo.playerMon(startDex, partner);
+    const perks = G.Upgrades.perks(G.DB.upgradesOf(partner), G.Upgrades.starsOf(partner));
 
     G.UI.hideAll();
     G.UI.chrome(false);
@@ -195,24 +199,25 @@ G.Game = (() => {
     time = 0; pendingLevels = 0;
     runReal = performance.now(); tampered = false;
 
-    pl = new G.Player(mon, perks, snap ? !!snap.shiny : !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
+    pl = new G.Player(mon, perks, snap ? !!snap.shiny : !!save.partnerShiny && G.DB.ownsShiny(partner));
+    pl.evoTarget = partner; pl.natureDex = partner;
     G.Bonus.runStart();
     G.Plates.reset(pl);
     G.Eternatus.reset(snap && snap.eterna);
     pl.xpMul *= G.Modes.diff.xp * G.Bonus.xp;   // difficulty and bonus events (update 40)
     if (G.Modes.dojo) G.Dojo.start(pl);
     G.Orbs.reset();
-    pl.setAbility(G.Mons.abilityOf(mon.dex).id);
+    pl.setAbility(G.Mons.abilityOf(partner).id);
     pl.anim.skin = G.Skins.worn(save, mon.dex) || null;      // su disfraz (core/skins.js)
     pl.candy = 0;
     banked = { t1: 0, t10: 0, cn: 0 };
     caught = [];
     // Atajos: movimientos con hueco fijo (save.pbind[dex] = [id del 1, id del 2, ...]),
     // antes de aprender nada: addMove ya los coloca.
-    (save.pbind && save.pbind[mon.dex] || []).forEach((id, i) => { if (id) pl.bind[id] = i; });
+    (save.pbind && save.pbind[partner] || []).forEach((id, i) => { if (id) pl.bind[id] = i; });
     pl.addMove(G.startMoveOf(mon.dex));
     // Mejora "Veto": movimientos que no quieres que te salgan.
-    pl.banned = new Set((save.pban && save.pban[mon.dex] || []).slice(0, perks.bans));
+    pl.banned = new Set((save.pban && save.pban[partner] || []).slice(0, perks.bans));
     // Mejora "Repertorio": un segundo movimiento de ataque, el elegido con
     // "Segundo movimiento inicial" o, si no, al azar.
     if (perks.startMoves >= 2) {
@@ -547,7 +552,11 @@ G.Game = (() => {
     pendingLevels--;
     state = 'levelup';
     G.Audio.sfx('levelup');
-    G.RunUI.showLevelUp(pl.level, G.LevelUp.offer(pl), card => {
+    // Evolution (systems/evo.js): evolves now, or offers the branches to choose
+    // from first (then this level's usual pick follows).
+    const evoCards = G.Evo.onLevel(pl);
+    if (evoCards) pendingLevels++;
+    G.RunUI.showLevelUp(pl.level, evoCards || G.LevelUp.offer(pl), card => {
       G.Audio.sfx('confirm');
       card.apply(pl);
       state = 'playing';

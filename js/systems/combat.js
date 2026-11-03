@@ -749,14 +749,55 @@ G.Combat = (() => {
   const CLOSE = new Set(['melee', 'spin']);
   const bandK = (pl, m) => (!pl.hasItem ? 1 : m && CLOSE.has(m.kind) ? (pl.hasItem('muscleband') ? 1.2 : 1) : (pl.hasItem('wiseglasses') ? 1.2 : 1));
 
+  /*
+   * Standalone: SHINY MOVES. A shiny partner's moves are shiny versions: +20 %
+   * damage, a sparkle, and a small extra by the move's type (strong, not
+   * overpowered: the extras are light and short):
+   *   fire, dragon            a burn
+   *   poison, bug, grass      poison
+   *   water, ice, ground,
+   *   rock, steel, ghost,
+   *   psychic                 a short slow
+   *   electric, flying,
+   *   normal, fighting,
+   *   dark, fairy             a spark that jumps to one more foe nearby (25 %)
+   */
+  const SHINY_K = 1.2;
+  const shinyK = pl => (!ghost && pl.shiny ? SHINY_K : 1);
+  const SHINY_FX = { fire: 'burn', dragon: 'burn', poison: 'poison', bug: 'poison', grass: 'poison',
+                     water: 'slow', ice: 'slow', ground: 'slow', rock: 'slow', steel: 'slow', ghost: 'slow', psychic: 'slow' };
+  function shinyHit(pl, e, type, dmg, sk) {
+    if (ghost || !pl.shiny) return;
+    if (Math.random() < 0.35) G.FX.twinkle(e.x + G.U.rand(-8, 8), e.y - e.bodyH * G.U.rand(0.3, 0.9));
+    const fx = SHINY_FX[type] || 'spark';
+    if (fx === 'burn' && sk) e.applyBurn(0.5 * sk);
+    else if (fx === 'poison' && sk) e.applyPoison(0.5 * sk);
+    else if (fx === 'slow' && sk) e.applySlow(0.15, 0.6);
+    else if (fx === 'spark' && Math.random() < 0.35) {
+      let best = null, bd = 90 * 90;
+      for (const o of G.EnemyMgr.queryCircle(e.x, e.y, 90)) {
+        if (o === e || o.dead || o.arceus) continue;
+        const d = G.U.dist2(o.x, o.y, e.x, e.y);
+        if (d < bd) { bd = d; best = o; }
+      }
+      if (best) {
+        best.hurt(dmg * 0.25, '#bff4ff', best.x - e.x, best.y - e.y, 0, null);
+        const ax = e.x, ay = e.y - e.bodyH * 0.5, bx = best.x, by = best.y - best.bodyH * 0.5;
+        G.FX.beam(ax, ay, Math.atan2(by - ay, bx - ax), Math.hypot(bx - ax, by - ay), 3, '#bff4ff', { pal: 'electric' });
+        pl.dmgDealt += dmg * 0.25;
+      }
+    }
+  }
+
   /** Arceus (Sentencia) sólo recibe una parte (ver Judgment.dmgK). */
   const arcK = e => (e.arceus ? G.Judgment.dmgK() : 1);
 
   function hit(pl, e, dmg, col, dx, dy, knock, m) {
     const k = typeK(m.type, e) * G.Stats.taken(e.mon, m.cat) * abilOut(pl, m, e) * arcK(e) * bandK(pl, m);
     const crit = isCrit(pl), sk = statusK(pl);
-    dmg *= k * (crit ? critMul(pl) : 1);
+    dmg *= k * (crit ? critMul(pl) : 1) * shinyK(pl);
     e.hurt(dmg, col, dx, dy, sk ? knock : 0, crit ? 'crit' : G.Types.label(G.Types.mult(m.type, e.types)));
+    shinyHit(pl, e, m.type, dmg, sk);
     if (!ghost) pl.onDealt(dmg);
     pl.dmgDealt += dmg;
     m.dealt = (m.dealt || 0) + dmg;               // por ataque, para el resumen de la pausa
@@ -865,9 +906,10 @@ G.Combat = (() => {
         }
 
         const crit = isCrit(pl), sk = statusK(pl);
-        const k = (p.mtype ? typeK(p.mtype, e) : 1) * G.Stats.taken(e.mon, p.mcat) * (crit ? critMul(pl) : 1) * abilOut(pl, p.src, e) * arcK(e) * bandK(pl, p.src);
+        const k = (p.mtype ? typeK(p.mtype, e) : 1) * G.Stats.taken(e.mon, p.mcat) * (crit ? critMul(pl) : 1) * abilOut(pl, p.src, e) * arcK(e) * bandK(pl, p.src) * shinyK(pl);
         e.hurt(p.dmg * k, p.color, p.vx || (e.x - pl.x), p.vy || (e.y - pl.y), sk ? p.knock : 0,
                crit ? 'crit' : p.mtype ? G.Types.label(G.Types.mult(p.mtype, e.types)) : null);
+        shinyHit(pl, e, p.mtype, p.dmg * k, sk);
         if (Math.random() < 0.5) G.FX.sp('impact', p.vis ? p.vis.pal : 'normal', e.x, e.y - e.bodyH * 0.5, { life: 0.12, scale: 1 });
         pl.dmgDealt += p.dmg * k;
         if (p.src) p.src.dealt = (p.src.dealt || 0) + p.dmg * k;

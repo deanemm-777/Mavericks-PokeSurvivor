@@ -91,7 +91,8 @@ G.MenuUI = (() => {
     $('menu-partner').classList.toggle('shiny', shiny);
     $('menu-partner-name').innerHTML = mon.name + (shiny ? ' ' + G.Icons.html('shiny', 24) : '');
     $('menu-partner-info').innerHTML = G.UI.typeChips(mon.types) + ' ' + G.UI.stars(mon.rarity) +
-      (G.Upgrades.starsOf(mon.dex) ? ` <span class="pstars" translate="no">${'★'.repeat(G.Upgrades.starsOf(mon.dex))}</span>` : '');
+      (G.Upgrades.starsOf(mon.dex) ? ` <span class="pstars" translate="no">${'★'.repeat(G.Upgrades.starsOf(mon.dex))}</span>` : '') +
+      (G.Evo.note(mon.dex) ? `<div class="sub" style="font-size:11px" translate="no">${G.Evo.note(mon.dex)}</div>` : '');
     // Normal / shiny a mano, aquí mismo (en el móvil no se encontraba en la ficha).
     const seg = $('menu-shiny');
     seg.classList.toggle('hidden', !G.DB.ownsShiny(mon.dex));
@@ -390,7 +391,8 @@ G.MenuUI = (() => {
         ${megaBox(dex)}
         ${monExtras(dex)}
         ${p.types.length === 1 ? `<p class="sub center" style="margin:2px 0 0">Monotipo: +20 % de daño con sus ataques de tipo ${G.U.TYPE_NAME[p.types[0]]}</p>` : ''}
-        <p style="font-size:14px;margin:10px 0 4px">Empieza con <b class="gold">${G.T(G.Moves.BY_ID[G.startMoveOf(dex)].name, 'move')}</b></p>
+        <p style="font-size:14px;margin:10px 0 4px">Empieza con <b class="gold">${G.T(G.Moves.BY_ID[G.startMoveOf(G.Evo.startOf(dex))].name, 'move')}</b></p>
+        ${G.Evo.note(dex) ? `<p class="sub center gold" style="margin:2px 0 6px" translate="no">${G.Evo.note(dex)}</p>` : ''}
         <p class="move-icons" id="dex-moves">
           ${G.Moves.poolFor(p).map(id => `<span data-move="${id}">${G.Icons.html('move:' + id, 32)}</span>`).join('')}</p>
         ${usingThis
